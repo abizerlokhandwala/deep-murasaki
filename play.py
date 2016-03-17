@@ -21,10 +21,10 @@ import traceback
 def get_model_from_pickle(fn):
 	f = open(fn)
 	Ws, bs = pickle.load(f)
-	
+
 	Ws_s, bs_s = train.get_parameters(Ws=Ws, bs=bs)
 	x, p = train.get_model(Ws_s, bs_s)
-	
+
 	predict = theano.function(
 		inputs=[x],
 		outputs=p)
@@ -139,7 +139,7 @@ class Computer(Player):
 		self._pos = self._pos.move(best_move)
 		crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
 		move = create_move(gn_current.board(), crdn)
-		
+
 		gn_new = chess.pgn.GameNode()
 		gn_new.parent = gn_current
 		gn_new.move = move
@@ -175,7 +175,7 @@ class Human(Player):
 		gn_new = chess.pgn.GameNode()
 		gn_new.parent = gn_current
 		gn_new.move = move
-		
+
 		return gn_new
 
 
@@ -201,7 +201,7 @@ class Sunfish(Player):
 
 		crdn = sunfish.render(119-move[0]) + sunfish.render(119 - move[1])
 		move = create_move(gn_current.board(), crdn)
-		
+
 		gn_new = chess.pgn.GameNode()
 		gn_new.parent = gn_current
 		gn_new.move = move
@@ -220,7 +220,7 @@ def game(func):
 	player_b = Sunfish(maxn=maxn)
 
 	times = {'A': 0.0, 'B': 0.0}
-	
+
 	while True:
 		for side, player in [('A', player_a), ('B', player_b)]:
 			t0 = time.time()
@@ -245,7 +245,7 @@ def game(func):
 			elif s.find('K') == -1 or s.find('k') == -1:
 				# Both AI's suck at checkmating, so also detect capturing the king
 				return side, times
-			
+
 def play():
 	func = get_model_from_pickle('model.pickle')
 	while True:
@@ -254,6 +254,5 @@ def play():
 		f.write('%s %f %f\n' % (side, times['A'], times['B']))
 		f.close()
 
-		
 if __name__ == '__main__':
 	play()
