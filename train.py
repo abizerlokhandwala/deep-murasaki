@@ -18,10 +18,12 @@ MINIBATCH_SIZE = 2000
 
 rng = numpy.random
 
+DATA_FOLDER = '/media/lenik/Images/FICS'
+
 def floatX(x):
 	return numpy.asarray(x, dtype=theano.config.floatX)
 
-def load_data(dir='/mnt/games'):
+def load_data(dir = DATA_FOLDER):
 	for fn in os.listdir(dir):
 		if not fn.endswith('.hdf5'):
 			continue
@@ -35,7 +37,7 @@ def load_data(dir='/mnt/games'):
 
 def get_data(series=['x', 'xr']):
 	data = [[] for s in series]
-	for f in load_data():
+	for f in load_data('.'):
 		try:
 			for i, s in enumerate(series):
 				data[i].append(f[s].value)
@@ -51,7 +53,7 @@ def get_data(series=['x', 'xr']):
 
 	data = [stack(d) for d in data]
 
-	test_size = 10000.0 / len(data[0])
+	test_size = 1000.0 / len(data[0])	# was 10000.0, TODO: bring it back when more data available
 	print 'Splitting', len(data[0]), 'entries into train/test set'
 	data = train_test_split(*data, test_size=test_size)
 
@@ -198,6 +200,8 @@ def get_function(Ws_s, bs_s, dropout=False, update=False):
 	return f
 
 def train():
+	MODEL_PICKLE = 'model.pickle'
+
 	Xc_train, Xc_test, Xr_train, Xr_test, Xp_train, Xp_test = get_data(['x', 'xr', 'xp'])
 	for board in [Xc_train[0], Xp_train[0]]:
 		for row in xrange(8):
@@ -206,7 +210,12 @@ def train():
 
 	n_in = 12 * 64
 
-	Ws_s, bs_s = get_parameters(n_in=n_in, n_hidden_units=[2048] * 3)
+	if os.path.isfile( MODEL_PICKLE ) :		# saved model exists, load it
+		with open(MODEL_PICKLE) as fin :
+			saved_ws, saved_bs = pickle.load(fin)
+		Ws_s, bs_s = get_parameters(n_in=n_in, n_hidden_units=[2048] * 3, Ws = saved_ws, bs = saved_bs)
+	else :
+		Ws_s, bs_s = get_parameters(n_in=n_in, n_hidden_units=[2048] * 3)
 
 	minibatch_size = min(MINIBATCH_SIZE, Xc_train.shape[0])
 
@@ -227,7 +236,8 @@ def train():
 		loss, reg, loss_a, loss_b, loss_c = train(Xc_train[lo:hi], Xr_train[lo:hi], Xp_train[lo:hi], learning_rate)
 
 		zs = [loss, loss_a, loss_b, loss_c, reg]
-		print 'iteration %6d learning rate %12.9f: %s' % (i, learning_rate, '\t'.join(['%12.9f' % z for z in zs]))
+		if i % 10 == 0 :	# reduce noise pollution
+			print 'iteration %6d learning rate %12.9f: %s' % (i, learning_rate, '\t'.join(['%12.9f' % z for z in zs]))
 
 		if i % 200 == 0:
 			test_loss, test_reg, _, _, _ = test(Xc_test, Xr_test, Xp_test, learning_rate)
@@ -238,7 +248,7 @@ def train():
 				best_test_loss = test_loss
 
 				print 'dumping pickled model'
-				f = open('model.pickle', 'w')
+				f = open(MODEL_PICKLE, 'w')
 				def values(zs):
 					return [z.get_value(borrow=True) for z in zs]
 				pickle.dump((values(Ws_s), values(bs_s)), f)

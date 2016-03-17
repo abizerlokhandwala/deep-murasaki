@@ -144,7 +144,6 @@ class Computer(Player):
 		gn_new.parent = gn_current
 		gn_new.move = move
 
-
 		return gn_new
 
 

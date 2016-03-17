@@ -34,7 +34,7 @@ def read_games(fn):
 def bb2array(b, flip=False):
 	x = numpy.zeros(64, dtype=numpy.int8)
 
-#	for pos, piece in enumerate(b.pieces()):
+#	for pos, piece in enumerate(b.pieces()):	# broken in pychess v0.13.2, hence the next two lines
 	for pos in range(64) :
 		piece = b.piece_type_at(pos)
 		if piece :
