@@ -78,7 +78,6 @@ def get_parameters(n_in=None, n_hidden_units=2048, n_hidden_layers=None, Ws=None
 				low=-numpy.sqrt(6. / (n_in + n_out)),
 				high=numpy.sqrt(6. / (n_in + n_out)),
 				size=(n_in, n_out)), dtype=theano.config.floatX)
-
 		
 		for l in xrange(n_hidden_layers):
 			if l == 0:
@@ -204,10 +203,10 @@ def train():
 	MODEL_PICKLE = 'model.pickle'
 
 	Xc_train, Xc_test, Xr_train, Xr_test, Xp_train, Xp_test = get_data(['x', 'xr', 'xp'])
-	for board in [Xc_train[0], Xp_train[0]]:
-		for row in xrange(8):
-			print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
-		print
+#	for board in [Xc_train[0], Xp_train[0]]:
+#		for row in xrange(8):
+#			print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
+#		print
 
 	n_in = 12 * 64
 
