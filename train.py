@@ -37,7 +37,7 @@ def load_data(dir = DATA_FOLDER):
 
 def get_data(series=['x', 'xr']):
 	data = [[] for s in series]
-	for f in load_data():
+	for f in load_data('.'):
 		try:
 			for i, s in enumerate(series):
 				data[i].append(f[s].value)
@@ -238,7 +238,7 @@ def train():
 
 		zs = [loss, loss_a, loss_b, loss_c, reg]
 		if i % 10 == 0 :	# reduce noise pollution
-			print 'iteration %6d learning rate %12.9f: %s' % (i, learning_rate, '\t'.join(['%12.9f' % z for z in zs]))
+			print 'iteration %6d learning rate %12.9f: %s' % (i, learning_rate, '  '.join(['%12.9f' % z for z in zs]))
 
 		if i % 200 == 0:
 			test_loss, test_reg, _, _, _ = test(Xc_test, Xr_test, Xp_test, learning_rate)
