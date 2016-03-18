@@ -9,7 +9,7 @@ import itertools
 import random
 import h5py
 
-PNG_FOLDER = '/media/lenik/Images/FICS'
+PNG_FOLDER = 'data'
 
 if not os.path.isdir( PNG_FOLDER ) :
 	sys.exit(PNG_FOLDER + ' is not accessible')

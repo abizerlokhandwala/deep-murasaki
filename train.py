@@ -18,7 +18,7 @@ MINIBATCH_SIZE = 2000
 
 rng = numpy.random
 
-DATA_FOLDER = '/media/lenik/Images/FICS'
+DATA_FOLDER = 'data'
 
 def floatX(x):
 	return numpy.asarray(x, dtype=theano.config.floatX)
@@ -37,7 +37,7 @@ def load_data(dir = DATA_FOLDER):
 
 def get_data(series=['x', 'xr']):
 	data = [[] for s in series]
-	for f in load_data('.'):
+	for f in load_data():
 		try:
 			for i, s in enumerate(series):
 				data[i].append(f[s].value)
@@ -53,7 +53,8 @@ def get_data(series=['x', 'xr']):
 
 	data = [stack(d) for d in data]
 
-	test_size = 1000.0 / len(data[0])	# was 10000.0, TODO: bring it back when more data available
+	#test_size = 10000.0 / len(data[0])	# does not work for small data sets (<10k entries)
+	test_size = 0.1		# let's make it fixed 10% instead
 	print 'Splitting', len(data[0]), 'entries into train/test set'
 	data = train_test_split(*data, test_size=test_size)
 

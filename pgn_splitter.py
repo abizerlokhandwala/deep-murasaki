@@ -6,7 +6,7 @@
 
 import sys, os
 
-SPLIT_THRESHOLD = 10000
+SPLIT_THRESHOLD = 50000		# this much events into the one file
 
 if len(sys.argv) < 2 :
 	sys.exit('USAGE: pgn_splitter file.pgn')
