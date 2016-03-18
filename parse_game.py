@@ -9,10 +9,10 @@ import itertools
 import random
 import h5py
 
-PNG_FOLDER = 'data'
+DATA_FOLDER = 'data'
 
-if not os.path.isdir( PNG_FOLDER ) :
-	sys.exit(PNG_FOLDER + ' is not accessible')
+if not os.path.isdir( DATA_FOLDER ) :
+	sys.exit(DATA_FOLDER + ' is not accessible')
 
 def read_games(fn):
 	f = open(fn)
@@ -43,6 +43,7 @@ def bb2array(b, flip=False):
 			row = int(pos / 8)
 			if flip:
 				row = 7-row
+				col = 7-col		# preserve the symmetry after flipping
 				color = 1 - color
 
 			piece = color*7 + piece
@@ -73,38 +74,43 @@ def parse_game(g):
 		moves_left += 1
 
 #	print len(gns)
-	if len(gns) < 10:
-		print g.end()
+#	if len(gns) < 10:
+#		print g.end()
 
-	gns.pop()
+	gns.pop()		# remove first position?
 
-	moves_left, gn, flip = random.choice(gns) # remove first position
+	#moves_left, gn, flip = random.choice(gns)
 
-	b = gn.board()
-	x = bb2array(b, flip=flip)
-	b_parent = gn.parent.board()
-	x_parent = bb2array(b_parent, flip=(not flip))
-	if flip:
-		y = -y
+	result = []
+	for moves_left, gn, flip in gns :
 
-	# generate a random baord
-	moves = list(b_parent.legal_moves)
-	move = random.choice(moves)
-	b_parent.push(move)
-	x_random = bb2array(b_parent, flip=flip)
+		b = gn.board()
+		x = bb2array(b, flip=flip)
+		b_parent = gn.parent.board()
+		x_parent = bb2array(b_parent, flip=(not flip))
+		if flip:
+			y = - rm[r]
 
-	if moves_left < 3:
-		print moves_left, 'moves left'
-		print 'winner:', y
-		print g.headers
-		print b
-		print 'checkmate:', g.end().board().is_checkmate()
+		# generate a random board
+		moves = list(b_parent.legal_moves)
+		move = random.choice(moves)
+		b_parent.push(move)
+		x_random = bb2array(b_parent, flip=flip)
 
-	# print x
-	# print x_parent
-	# print x_random
+		#if moves_left < 3:
+		#	print moves_left, 'moves left'
+		#	print 'winner:', y
+		#	print g.headers
+		#	print b
+		#	print 'checkmate:', g.end().board().is_checkmate()
 
-	return (x, x_parent, x_random, moves_left, y)
+		# print x
+		# print x_parent
+		# print x_random
+
+		result.append( (x, x_parent, x_random, moves_left, y) )
+
+	return result
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
@@ -116,21 +122,21 @@ def read_all_games(fn_in, fn_out):
 		game = parse_game(game)
 		if game is None:
 			continue
-		x, x_parent, x_random, moves_left, y = game
 
-		if line + 1 >= size:
-			g.flush()
-			size = 2 * size + 1
-			print 'resizing to', size
-			[d.resize(size=size, axis=0) for d in (X, Xr, Xp, Y, M)]
+		for x, x_parent, x_random, moves_left, y in game :
+			if line + 1 >= size:
+				g.flush()
+				size = 2 * size + 1
+				print 'resizing to', size
+				[d.resize(size=size, axis=0) for d in (X, Xr, Xp, Y, M)]
 
-		X[line] = x
-		Xr[line] = x_random
-		Xp[line] = x_parent
-		Y[line] = y
-		M[line] = moves_left
+			X[line] = x
+			Xr[line] = x_random
+			Xp[line] = x_parent
+			Y[line] = y
+			M[line] = moves_left
 
-		line += 1
+			line += 1
 
 	[d.resize(size=line, axis=0) for d in (X, Xr, Xp, Y, M)]
 	g.close()
@@ -141,10 +147,10 @@ def read_all_games_2(a):
 def parse_dir():
 	files = []
 
-	for fn_in in os.listdir(PNG_FOLDER):
+	for fn_in in os.listdir(DATA_FOLDER):
 		if not fn_in.endswith('.pgn'):
 			continue
-		fn_in = os.path.join(PNG_FOLDER, fn_in)
+		fn_in = os.path.join(DATA_FOLDER, fn_in)
 		fn_out = fn_in.replace('.pgn', '.hdf5')
 		if not os.path.exists(fn_out) :
 			files.append((fn_in, fn_out))
