@@ -6,7 +6,7 @@
 
 import sys, os
 
-SPLIT_THRESHOLD = 50000		# this much events into the one file
+WAYS_TO_SPLIT = 7	# should load up to 7 cores
 
 if len(sys.argv) < 2 :
 	sys.exit('USAGE: pgn_splitter file.pgn')
@@ -21,6 +21,18 @@ line = ''
 
 with open( sys.argv[1] ) as fin :
 	while True :
+		line = fin.readline()
+		if len(line) == 0 : break
+		if line.startswith( '[Event' ) :
+			events += 1
+
+	split_threshold = events / WAYS_TO_SPLIT + 4;
+	print events, 'events, splitting', WAYS_TO_SPLIT, 'ways by', split_threshold
+
+	events = 0
+	fin.seek( 0 )	# rewind
+
+	while True :
 		new_name = '%s.%03d.pgn' % (name, num)
 		print new_name
 		with open( new_name, 'wb' ) as fout :
@@ -33,7 +45,7 @@ with open( sys.argv[1] ) as fin :
 
 				if line.startswith( '[Event' ) :
 					events += 1
-					if events > SPLIT_THRESHOLD :
+					if events > split_threshold :
 						events = 0
 						break
 
