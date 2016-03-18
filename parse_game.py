@@ -77,7 +77,11 @@ def parse_game(g):
 #	if len(gns) < 10:
 #		print g.end()
 
-	gns.pop()		# remove first position?
+	if len(gns) > 10 :
+		num = random.randint(0,5)
+		for i in range(num) :
+			gns.pop()		# remove first N positions to lessen repetitions
+	gns.pop()
 
 	#moves_left, gn, flip = random.choice(gns)
 
@@ -92,10 +96,10 @@ def parse_game(g):
 			y = - rm[r]
 
 		# generate a random board
-		moves = list(b_parent.legal_moves)
-		move = random.choice(moves)
-		b_parent.push(move)
-		x_random = bb2array(b_parent, flip=flip)
+#		moves = list(b_parent.legal_moves)
+#		move = random.choice(moves)
+#		b_parent.push(move)
+#		x_random = bb2array(b_parent, flip=flip)
 
 		#if moves_left < 3:
 		#	print moves_left, 'moves left'
@@ -108,14 +112,16 @@ def parse_game(g):
 		# print x_parent
 		# print x_random
 
-		result.append( (x, x_parent, x_random, moves_left, y) )
+#		result.append( (x, x_parent, x_random, moves_left, y) )
+		result.append( (x, x_parent) )
 
 	return result
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
-	X, Xr, Xp = [g.create_dataset(d, (0, 64), dtype='b', maxshape=(None, 64), chunks=True) for d in ['x', 'xr', 'xp']]
-	Y, M = [g.create_dataset(d, (0,), dtype='b', maxshape=(None,), chunks=True) for d in ['y', 'm']]
+#	X, Xr, Xp = [g.create_dataset(d, (0, 64), dtype='b', maxshape=(None, 64), chunks=True) for d in ['x', 'xr', 'xp']]
+#	Y, M = [g.create_dataset(d, (0,), dtype='b', maxshape=(None,), chunks=True) for d in ['y', 'm']]
+	X, Xp = [g.create_dataset(d, (0, 64), dtype='b', maxshape=(None, 64), chunks=True) for d in ['x', 'xp']]
 	size = 0
 	line = 0
 	for game in read_games(fn_in):
@@ -123,22 +129,25 @@ def read_all_games(fn_in, fn_out):
 		if game is None:
 			continue
 
-		for x, x_parent, x_random, moves_left, y in game :
+#		for x, x_parent, x_random, moves_left, y in game :
+		for x, x_parent in game :
 			if line + 1 >= size:
 				g.flush()
 				size = 2 * size + 1
 				print 'resizing to', size
-				[d.resize(size=size, axis=0) for d in (X, Xr, Xp, Y, M)]
+#				[d.resize(size=size, axis=0) for d in (X, Xr, Xp, Y, M)]
+				[d.resize(size=size, axis=0) for d in (X, Xp)]
 
 			X[line] = x
-			Xr[line] = x_random
+#			Xr[line] = x_random
 			Xp[line] = x_parent
-			Y[line] = y
-			M[line] = moves_left
+#			Y[line] = y
+#			M[line] = moves_left
 
 			line += 1
 
-	[d.resize(size=line, axis=0) for d in (X, Xr, Xp, Y, M)]
+#	[d.resize(size=line, axis=0) for d in (X, Xr, Xp, Y, M)]
+	[d.resize(size=line, axis=0) for d in (X, Xp)]
 	g.close()
 
 def read_all_games_2(a):
