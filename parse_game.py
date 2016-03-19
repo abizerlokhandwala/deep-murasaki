@@ -3,7 +3,7 @@
 import chess, chess.pgn
 import numpy
 import sys
-import os
+import os, time
 import multiprocessing
 import itertools
 import random
@@ -170,5 +170,7 @@ def parse_dir():
 		pool.close()
 
 if __name__ == '__main__':
+	start = time.time()
 	parse_dir()
+	print 'done in %.2f seconds' % (time.time() - start)
 
