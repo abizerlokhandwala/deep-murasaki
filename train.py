@@ -37,7 +37,7 @@ def load_data(dir = DATA_FOLDER):
 
 def get_data(series=['x', 'xr']):
 	data = [[] for s in series]
-	for f in load_data('.'):
+	for f in load_data():
 		try:
 			for i, s in enumerate(series):
 				data[i].append(f[s].value)
@@ -226,33 +226,41 @@ def train():
 	base_learning_rate = 0.03
 	t0 = time.time()
 
-	i = 0
-	while True:
-		i += 1
-		learning_rate = floatX(base_learning_rate * math.exp(-(time.time() - t0) / 86400))
+	batch_num = int(Xc_train.shape[0] / minibatch_size)
+	batches = list(range(batch_num))
 
-		minibatch_index = random.randint(0, int(Xc_train.shape[0] / minibatch_size) - 1)
-		lo, hi = minibatch_index * minibatch_size, (minibatch_index + 1) * minibatch_size
-		loss, reg, loss_a, loss_b, loss_c = train(Xc_train[lo:hi], Xr_train[lo:hi], Xp_train[lo:hi], learning_rate)
+	epoch = 0
+	while True :
+		epoch += 1
+		random.shuffle( batches )
 
-		zs = [loss, loss_a, loss_b, loss_c, reg]
-		if i % 10 == 0 :	# reduce noise pollution
-			print 'iteration %6d learning rate %12.9f: %s' % (i, learning_rate, '  '.join(['%12.9f' % z for z in zs]))
+		for i in range(batch_num) :
 
-		if i % 200 == 0:
-			test_loss, test_reg, _, _, _ = test(Xc_test, Xr_test, Xp_test, learning_rate)
-			print 'test loss %12.9f' % test_loss
+			minibatch_index = batches[i]
+			#minibatch_index = random.randint(0, int(Xc_train.shape[0] / minibatch_size) - 1)
+			lo, hi = minibatch_index * minibatch_size, (minibatch_index + 1) * minibatch_size
 
-			if test_loss < best_test_loss:
-				print 'new record!'
-				best_test_loss = test_loss
+			learning_rate = floatX(base_learning_rate * math.exp(-(time.time() - t0) / 86400))
+			loss, reg, loss_a, loss_b, loss_c = train(Xc_train[lo:hi], Xr_train[lo:hi], Xp_train[lo:hi], learning_rate)
 
-				print 'dumping pickled model'
-				f = open(MODEL_PICKLE, 'w')
-				def values(zs):
-					return [z.get_value(borrow=True) for z in zs]
-				pickle.dump((values(Ws_s), values(bs_s)), f)
-				f.close()
+			zs = [loss, loss_a, loss_b, loss_c, reg]
+			if i % 10 == 0 :	# reduce noise pollution
+				print 'epoch %d done %.2f%% learning rate %12.9f: %s' % (epoch, i*100.0/batch_num, learning_rate, '  '.join(['%12.9f' % z for z in zs]))
+
+			if i % 200 == 0:
+				test_loss, test_reg, _, _, _ = test(Xc_test, Xr_test, Xp_test, learning_rate)
+				print 'test loss %12.9f' % test_loss
+
+				if test_loss < best_test_loss:
+					print 'new record!'
+					best_test_loss = test_loss
+
+					print 'dumping pickled model'
+					f = open(MODEL_PICKLE, 'w')
+					def values(zs):
+						return [z.get_value(borrow=True) for z in zs]
+					pickle.dump((values(Ws_s), values(bs_s)), f)
+					f.close()
 
 
 if __name__ == '__main__':
