@@ -169,8 +169,17 @@ def parse_dir():
 		pool.map(read_all_games_2, files)
 		pool.close()
 
+def pretty_time( t ) :
+	if t > 86400 :
+		return '%.2fd' % (t / 86400)
+	if t > 3600 :
+		return '%.2fh' % (t / 3600)
+	if t > 60 :
+		return '%.2fm' % (t / 60)
+	return '%.2fs' % t
+
 if __name__ == '__main__':
 	start = time.time()
 	parse_dir()
-	print 'done in %.2f seconds' % (time.time() - start)
+	print 'done in', pretty_time(time.time() - start)
 
