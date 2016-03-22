@@ -53,6 +53,17 @@ def bb2array(b, flip=False):
 	return x
 
 
+letters = { 'a' : 0, 'b' : 1, 'c' : 2, 'd' : 3, 'e' : 4, 'f' : 5, 'g' : 6, 'h' : 7 }
+numbers = { '1' : 0, '2' : 1, '3' : 2, '4' : 3, '5' : 4, '6' : 5, '7' : 6, '8' : 7 }
+
+def numeric_notation( move ) :
+	m = numpy.zeros( 4, dtype=numpy.int8)
+	m[0] = letters[move[0]]
+	m[1] = numbers[move[1]]
+	m[2] = letters[move[2]]
+	m[3] = numbers[move[3]]
+	return m
+
 def parse_game(g):
 	rm = {'1-0': 1, '0-1': -1, '1/2-1/2': 0}
 	r = g.headers['Result']
@@ -63,8 +74,8 @@ def parse_game(g):
 
 	# Generate all boards
 	gn = g.end()
-	if not gn.board().is_game_over():
-		return None
+#	if not gn.board().is_game_over():
+#		return None
 
 	gns = []
 	moves_left = 0
@@ -91,15 +102,22 @@ def parse_game(g):
 		b = gn.board()
 		x = bb2array(b, flip=flip)
 		b_parent = gn.parent.board()
+
+#		print b_parent
+#		print b_parent.parse_san(gn.san()).uci()
+#		return None
+
 		x_parent = bb2array(b_parent, flip=(not flip))
 		if flip:
 			y = - rm[r]
 
+		move = b_parent.parse_san(gn.san()).uci()
+
 		# generate a random board
-		moves = list(b_parent.legal_moves)
-		move = random.choice(moves)
-		b_parent.push(move)
-		x_random = bb2array(b_parent, flip=flip)
+#		moves = list(b_parent.legal_moves)
+#		move = random.choice(moves)
+#		b_parent.push(move)
+#		x_random = bb2array(b_parent, flip=flip)
 
 		#if moves_left < 3:
 		#	print moves_left, 'moves left'
@@ -113,14 +131,17 @@ def parse_game(g):
 		# print x_random
 
 #		result.append( (x, x_parent, x_random, moves_left, y) )
-		result.append( (x, x_parent, x_random) )
+#		result.append( (x, x_parent, x_random) )
+		result.append( (x_parent, numeric_notation(move)) )
 
 	return result
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
-	X, Xr, Xp = [g.create_dataset(d, (0, 64), dtype='b', maxshape=(None, 64), chunks=True) for d in ['x', 'xr', 'xp']]
+#	X, Xr, Xp = [g.create_dataset(d, (0, 64), dtype='b', maxshape=(None, 64), chunks=True) for d in ['x', 'xr', 'xp']]
+	X = g.create_dataset('x', (0, 64), dtype='b', maxshape=(None, 64), chunks=True)
 #	Y, M = [g.create_dataset(d, (0,), dtype='b', maxshape=(None,), chunks=True) for d in ['y', 'm']]
+	M = g.create_dataset('m', (0, 4), dtype='b', maxshape=(None, 4), chunks=True)
 	size = 0
 	line = 0
 	for game in read_games(fn_in):
@@ -129,24 +150,28 @@ def read_all_games(fn_in, fn_out):
 			continue
 
 #		for x, x_parent, x_random, moves_left, y in game :
-		for x, x_parent, x_random in game :
+#		for x, x_parent, x_random in game :
+		for x, m in game :
 			if line + 1 >= size:
 				g.flush()
 				size = 2 * size + 1
 				print 'resizing to', size
+				[d.resize(size=size, axis=0) for d in (X, M)]
 #				[d.resize(size=size, axis=0) for d in (X, Xr, Xp, Y, M)]
-				[d.resize(size=size, axis=0) for d in (X, Xr, Xp)]
+#				[d.resize(size=size, axis=0) for d in (X, Xr, Xp)]
 
 			X[line] = x
-			Xr[line] = x_random
-			Xp[line] = x_parent
+			M[line] = m
+#			Xr[line] = x_random
+#			Xp[line] = x_parent
 #			Y[line] = y
 #			M[line] = moves_left
 
 			line += 1
 
 #	[d.resize(size=line, axis=0) for d in (X, Xr, Xp, Y, M)]
-	[d.resize(size=line, axis=0) for d in (X, Xr, Xp)]
+#	[d.resize(size=line, axis=0) for d in (X, Xr, Xp)]
+	[d.resize(size=size, axis=0) for d in (X, M)]
 	g.close()
 
 def read_all_games_2(a):
