@@ -71,49 +71,51 @@ def get_data(series=['x', 'm']):
 	print data[0].shape[0], 'train set', data[1].shape[0], 'test set'
 	return data
 
+def show_board( board ) :
+	for row in xrange(8):
+		print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
+	print
 
 def train():
-#	MODEL_PICKLE = 'model.pickle'
+	MODEL_DATA = 'new.model'
 
 	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
 #	for board in X_train[:2] :
-#		for row in xrange(8):
-#			print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
-#		print
-
-#	if os.path.isfile( MODEL_PICKLE ) :		# saved model exists, load it
-#		with open(MODEL_PICKLE) as fin :
-#			saved_ws, saved_bs = pickle.load(fin)
-#		Ws_s, bs_s = get_parameters(n_in=n_in, n_hidden_units=[2048] * 3, Ws = saved_ws, bs = saved_bs)
-#	else :
-#		Ws_s, bs_s = get_parameters(n_in=n_in, n_hidden_units=[2048] * 3)
+#		show_board( board )
 
 	model = Sequential()
 	model.add(Dense(2048, input_dim = 64, init='uniform', activation='relu' ))
-	model.add(Dropout(0.2))
+#	model.add(Dropout(0.2))
 	model.add(Dense(2048, init='uniform', activation='relu'))
-	model.add(Dropout(0.2))
+#	model.add(Dropout(0.2))
 	model.add(Dense(2048, init='uniform', activation='relu'))
-	model.add(Dropout(0.2))
+#	model.add(Dropout(0.2))
 	model.add(Dense(4, init='uniform', activation='relu'))
 
+#	if os.path.isfile( MODEL_DATA ) :		# saved model exists, load it
+#		model.load_weights( MODEL_DATA )
+
 	print 'compiling...'
-	#sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+#	sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
 #	model.compile(loss='squared_hinge', optimizer='adadelta')
-	model.compile(loss='mean_squared_error', optimizer='sgd')
+	model.compile(loss='mean_squared_error', optimizer='adadelta')
 
 	#print 'fitting...'
-	model.fit( X_train, m_train, nb_epoch = 10, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
+	model.fit( X_train, m_train, nb_epoch = 100, batch_size = BATCH_SIZE, verbose=2)	#, show_accuracy = True )
 
 	print 'evaluating...'
 	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
 
 	print 'score:', score
 
-#	model.save_weights( 'new.model', overwrite = True )
+	model.save_weights( MODEL_DATA, overwrite = True )
 
-#	print X_test[:10]
-#	print model.predict( X_test[:10], batch_size = 10 )
+	#print X_train[:10]
+	print m_train[:20]
+	print model.predict( X_train[:20], batch_size = 5 )
+
+	print m_test[:20]
+	print model.predict( X_test[:20], batch_size = 5 )
 
 
 if __name__ == '__main__':
