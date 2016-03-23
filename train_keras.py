@@ -90,22 +90,23 @@ def train():
 
 	model = Sequential()
 	model.add(Dense(2048, input_dim = 64, init='uniform', activation='relu' ))
-	model.add(Dropout(0.8))
+	model.add(Dropout(0.2))
 	model.add(Dense(2048, init='uniform', activation='relu'))
-	model.add(Dropout(0.8))
+	model.add(Dropout(0.2))
 	model.add(Dense(2048, init='uniform', activation='relu'))
-	model.add(Dropout(0.8))
+	model.add(Dropout(0.2))
 	model.add(Dense(4, init='uniform', activation='relu'))
 
 	print 'compiling...'
 	#sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-	model.compile(loss='squared_hinge', optimizer='adadelta')
+#	model.compile(loss='squared_hinge', optimizer='adadelta')
+	model.compile(loss='mean_squared_error', optimizer='sgd')
 
 	#print 'fitting...'
 	model.fit( X_train, m_train, nb_epoch = 10, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
 
 	print 'evaluating...'
-	score = model.evaluate(X_test, m_test, batch_size = 16 )
+	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
 
 	print 'score:', score
 
