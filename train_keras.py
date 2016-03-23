@@ -84,11 +84,11 @@ def train():
 #		show_board( board )
 
 	model = Sequential()
-	model.add(Dense(2048, input_dim = 64, init='uniform', activation='relu' ))
+	model.add(Dense(4096, input_dim = 64, init='uniform', activation='relu' ))
 #	model.add(Dropout(0.2))
-	model.add(Dense(2048, init='uniform', activation='relu'))
+	model.add(Dense(4096, init='uniform', activation='relu'))
 #	model.add(Dropout(0.2))
-	model.add(Dense(2048, init='uniform', activation='relu'))
+	model.add(Dense(4096, init='uniform', activation='relu'))
 #	model.add(Dropout(0.2))
 	model.add(Dense(4, init='uniform', activation='relu'))
 
@@ -101,14 +101,14 @@ def train():
 	model.compile(loss='mean_squared_error', optimizer='adadelta')
 
 	#print 'fitting...'
-	model.fit( X_train, m_train, nb_epoch = 100, batch_size = BATCH_SIZE, verbose=2)	#, show_accuracy = True )
+	model.fit( X_train, m_train, nb_epoch = 100, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
 
 	print 'evaluating...'
 	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
 
 	print 'score:', score
 
-	model.save_weights( MODEL_DATA, overwrite = True )
+#	model.save_weights( MODEL_DATA, overwrite = True )
 
 	#print X_train[:10]
 	print m_train[:20]
