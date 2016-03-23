@@ -105,7 +105,8 @@ def parse_game(g):
 
 #		print b_parent
 #		print b_parent.parse_san(gn.san()).uci()
-#		return None
+#		if len(result) > 6 :
+#			return None
 
 		x_parent = bb2array(b_parent, flip=(not flip))
 		if flip:
@@ -138,9 +139,7 @@ def parse_game(g):
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
-#	X, Xr, Xp = [g.create_dataset(d, (0, 64), dtype='b', maxshape=(None, 64), chunks=True) for d in ['x', 'xr', 'xp']]
 	X = g.create_dataset('x', (0, 64), dtype='b', maxshape=(None, 64), chunks=True)
-#	Y, M = [g.create_dataset(d, (0,), dtype='b', maxshape=(None,), chunks=True) for d in ['y', 'm']]
 	M = g.create_dataset('m', (0, 4), dtype='b', maxshape=(None, 4), chunks=True)
 	size = 0
 	line = 0
@@ -149,29 +148,19 @@ def read_all_games(fn_in, fn_out):
 		if game is None:
 			continue
 
-#		for x, x_parent, x_random, moves_left, y in game :
-#		for x, x_parent, x_random in game :
 		for x, m in game :
 			if line + 1 >= size:
 				g.flush()
 				size = 2 * size + 1
 				print 'resizing to', size
 				[d.resize(size=size, axis=0) for d in (X, M)]
-#				[d.resize(size=size, axis=0) for d in (X, Xr, Xp, Y, M)]
-#				[d.resize(size=size, axis=0) for d in (X, Xr, Xp)]
 
 			X[line] = x
 			M[line] = m
-#			Xr[line] = x_random
-#			Xp[line] = x_parent
-#			Y[line] = y
-#			M[line] = moves_left
 
 			line += 1
 
-#	[d.resize(size=line, axis=0) for d in (X, Xr, Xp, Y, M)]
-#	[d.resize(size=line, axis=0) for d in (X, Xr, Xp)]
-	[d.resize(size=size, axis=0) for d in (X, M)]
+	[d.resize(size=line, axis=0) for d in (X, M)]	# shrink to fit
 	g.close()
 
 def read_all_games_2(a):
