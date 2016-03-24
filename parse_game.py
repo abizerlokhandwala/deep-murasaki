@@ -53,15 +53,15 @@ def bb2array(b, flip=False):
 	return x
 
 
-letters = { 'a' : 0, 'b' : 1, 'c' : 2, 'd' : 3, 'e' : 4, 'f' : 5, 'g' : 6, 'h' : 7 }
-numbers = { '1' : 0, '2' : 1, '3' : 2, '4' : 3, '5' : 4, '6' : 5, '7' : 6, '8' : 7 }
+letters = { 'a' : 1, 'b' : 2, 'c' : 3, 'd' : 4, 'e' : 5, 'f' : 6, 'g' : 7, 'h' : 8 }
+numbers = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, '5' : 5, '6' : 6, '7' : 7, '8' : 8 }
 
 def numeric_notation( move ) :
 	m = numpy.zeros( 4, dtype=numpy.int8)
-	m[0] = letters[move[0]]
-	m[1] = numbers[move[1]]
-	m[2] = letters[move[2]]
-	m[3] = numbers[move[3]]
+	m[0] = letters[move[0]] * 10
+	m[1] = numbers[move[1]] * 10
+	m[2] = letters[move[2]] * 10
+	m[3] = numbers[move[3]] * 10
 	return m
 
 def parse_game(g):
