@@ -77,7 +77,7 @@ def show_board( board ) :
 	print
 
 def train():
-	MODEL_SIZE = [4096, 4096, 4096]
+	MODEL_SIZE = [1024, 1024, 1024, 1024, 1024, 1024, 1024]
 	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
@@ -85,12 +85,11 @@ def train():
 #		show_board( board )
 
 	model = Sequential()
-	model.add(Dense(MODEL_SIZE, input_dim = 64, init='uniform', activation='relu' ))
+	model.add(Dense(MODEL_SIZE[0], input_dim = 64, init='uniform', activation='relu' ))
 #	model.add(Dropout(0.2))
-	model.add(Dense(MODEL_SIZE, init='uniform', activation='relu'))
-#	model.add(Dropout(0.2))
-	model.add(Dense(MODEL_SIZE, init='uniform', activation='relu'))
-#	model.add(Dropout(0.2))
+	for i in MODEL_SIZE[1:] :
+		model.add(Dense( i, init='uniform', activation='relu'))
+#		model.add(Dropout(0.2))
 	model.add(Dense(4, init='uniform', activation='relu'))
 
 	if os.path.isfile( MODEL_DATA ) :		# saved model exists, load it
@@ -102,7 +101,7 @@ def train():
 	model.compile(loss='mean_squared_error', optimizer='adadelta')
 
 	#print 'fitting...'
-	model.fit( X_train, m_train, nb_epoch = 5, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
+	model.fit( X_train, m_train, nb_epoch = 100, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
 
 	print 'evaluating...'
 	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
