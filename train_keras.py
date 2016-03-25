@@ -64,7 +64,7 @@ def get_data(series=['x', 'm']):
 	data = [stack(d) for d in data]
 
 	#test_size = 10000.0 / len(data[0])	# does not work for small data sets (<10k entries)
-	test_size = 0.1		# let's make it fixed 10% instead
+	test_size = 0.05		# let's make it fixed 5% instead
 	print 'Splitting', len(data[0]), 'entries into train/test set'
 	data = train_test_split(*data, test_size=test_size)
 
@@ -77,8 +77,8 @@ def show_board( board ) :
 	print
 
 def train():
-	MODEL_SIZE = 4096
-	MODEL_DATA = 'new_%d.model' % MODEL_SIZE
+	MODEL_SIZE = [4096, 4096, 4096]
+	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
 #	for board in X_train[:2] :
@@ -102,7 +102,7 @@ def train():
 	model.compile(loss='mean_squared_error', optimizer='adadelta')
 
 	#print 'fitting...'
-	model.fit( X_train, m_train, nb_epoch = 8, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
+	model.fit( X_train, m_train, nb_epoch = 5, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
 
 	print 'evaluating...'
 	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
