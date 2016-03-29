@@ -16,6 +16,7 @@ import time
 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
+from keras.callbacks import EarlyStopping, Callback
 from keras.optimizers import SGD
 
 from numpy import array
@@ -63,12 +64,12 @@ def get_data(series=['x', 'm']):
 
 	data = [stack(d) for d in data]
 
-	#test_size = 10000.0 / len(data[0])	# does not work for small data sets (<10k entries)
-	test_size = 0.05		# let's make it fixed 5% instead
-	print 'Splitting', len(data[0]), 'entries into train/test set'
-	data = train_test_split(*data, test_size=test_size)
-
-	print data[0].shape[0], 'train set', data[1].shape[0], 'test set'
+#	#test_size = 10000.0 / len(data[0])	# does not work for small data sets (<10k entries)
+#	test_size = 0.05		# let's make it fixed 5% instead
+#	print 'Splitting', len(data[0]), 'entries into train/test set'
+#	data = train_test_split(*data, test_size=test_size)
+#
+#	print data[0].shape[0], 'train set', data[1].shape[0], 'test set'
 	return data
 
 def show_board( board ) :
@@ -78,9 +79,11 @@ def show_board( board ) :
 
 def train():
 	MODEL_SIZE = [1024, 1024, 1024, 1024, 1024, 1024, 1024]
+#	MODEL_SIZE = [512, 512, 512, 512, 512, 512, 512]
 	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
 
-	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
+	X, m = get_data(['x', 'm'])
+#	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
 #	for board in X_train[:2] :
 #		show_board( board )
 
@@ -100,22 +103,27 @@ def train():
 #	model.compile(loss='squared_hinge', optimizer='adadelta')
 	model.compile(loss='mean_squared_error', optimizer='adadelta')
 
+	early_stopping = EarlyStopping( monitor = 'loss', patience = 50 )	# monitor='val_loss', verbose=0, mode='auto'
 	#print 'fitting...'
-	model.fit( X_train, m_train, nb_epoch = 100, batch_size = BATCH_SIZE)	#, verbose=2)	#, show_accuracy = True )
+	history = model.fit( X, m, nb_epoch = 1000, batch_size = BATCH_SIZE)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
 
-	print 'evaluating...'
-	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
-
-	print 'score:', score
+#	print 'evaluating...'
+#	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
+#	print 'score:', score
 
 	model.save_weights( MODEL_DATA, overwrite = True )
 
 	#print X_train[:10]
-	print m_train[:20]
-	print model.predict( X_train[:20], batch_size = 5 )
+#	print m_train[:20]
+#	print model.predict( X_train[:20], batch_size = 5 )
+	print m[:20]
+	print model.predict( X[:20], batch_size = 5 )
 
-	print m_test[:20]
-	print model.predict( X_test[:20], batch_size = 5 )
+#	print m_test[:20]
+#	print model.predict( X_test[:20], batch_size = 5 )
+
+#	with open( MODEL_DATA + '.history', 'w') as fout :
+#		print >>fout, history.losses
 
 
 if __name__ == '__main__':
