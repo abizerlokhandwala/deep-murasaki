@@ -79,8 +79,12 @@ def show_board( board ) :
 
 def train():
 	MODEL_SIZE = [1024, 1024, 1024, 1024, 1024, 1024, 1024]
+#	MODEL_SIZE = [8192, 8192, 4096, 2048, 2048, 1024, 1024]
+#	MODEL_SIZE = [4096, 4096, 2048, 2048, 1024, 512, 256]
 #	MODEL_SIZE = [512, 512, 512, 512, 512, 512, 512]
+#	MODEL_SIZE = [256, 256, 256, 256, 256, 256, 256]
 	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
+	MODEL_DATA = 'normalized_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	X, m = get_data(['x', 'm'])
 #	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
@@ -105,7 +109,7 @@ def train():
 
 	early_stopping = EarlyStopping( monitor = 'loss', patience = 50 )	# monitor='val_loss', verbose=0, mode='auto'
 	#print 'fitting...'
-	history = model.fit( X, m, nb_epoch = 1000, batch_size = BATCH_SIZE)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
+	history = model.fit( X, m, nb_epoch = 500, batch_size = BATCH_SIZE)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
 
 #	print 'evaluating...'
 #	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )

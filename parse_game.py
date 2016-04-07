@@ -46,9 +46,10 @@ def bb2array(b, flip=False):
 				col = 7-col		# preserve the symmetry after flipping
 				color = 1 - color
 
-			piece = color*7 + piece
+			#piece = color*7 + piece
 
-			x[row * 8 + col] = piece
+			#x[row * 8 + col] = piece
+			x[row * 8 + col] = -piece if color else piece
 
 	return x
 
