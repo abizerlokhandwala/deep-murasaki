@@ -59,10 +59,10 @@ numbers = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, '5' : 5, '6' : 6, '7' : 7, '8' :
 
 def numeric_notation( move ) :
 	m = numpy.zeros( 4, dtype=numpy.int8)
-	m[0] = letters[move[0]] * 10
-	m[1] = numbers[move[1]] * 10
-	m[2] = letters[move[2]] * 10
-	m[3] = numbers[move[3]] * 10
+	m[0] = letters[move[0]]
+	m[1] = numbers[move[1]]
+	m[2] = letters[move[2]]
+	m[3] = numbers[move[3]]
 	return m
 
 def parse_game(g):

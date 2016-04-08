@@ -9,7 +9,12 @@ for r, d, files in os.walk('data') :
 		print f,
 		data = h5py.File( os.path.join( r, f ), 'r')
 
-		if sum(data['m'][0]) > 20 :
-			print 'scaled'
+		if sum(data['m'][0]) > 28 :
+			print 'scaled',
 		else :
-			print 'normal'
+			print 'normal',
+
+		if min(data['x'][0]) < 0 :
+			print 'zero-mean'
+		else :
+			print 'positive'
