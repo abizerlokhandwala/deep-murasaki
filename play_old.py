@@ -45,6 +45,57 @@ def sf2array(pos, flip):
 
 CHECKMATE_SCORE = 1e6
 
+def negamax(pos, depth, alpha, beta, color, func):
+	moves = []
+	X = []
+	pos_children = []
+	for move in pos.gen_moves():
+		pos_child = pos.move(move)
+		moves.append(move)
+		X.append(sf2array(pos_child, flip=(color==1)))
+		pos_children.append(pos_child)
+
+	if len(X) == 0:
+		return Exception('eh?')
+
+	# Use model to predict scores
+	scores = func(X)
+
+	for i, pos_child in enumerate(pos_children):
+		if pos_child.board.find('K') == -1:
+			scores[i] = CHECKMATE_SCORE
+
+	child_nodes = sorted(zip(scores, moves), reverse=True)
+
+	best_value = float('-inf')
+	best_move = None
+	
+	for score, move in child_nodes:
+		if depth == 1 or score == CHECKMATE_SCORE:
+			value = score
+		else:
+			# print 'ok will recurse', sunfish.render(move[0]) + sunfish.render(move[1])
+			pos_child = pos.move(move)
+			neg_value, _ = negamax(pos_child, depth-1, -beta, -alpha, -color, func)
+			value = -neg_value
+
+		# value += random.gauss(0, 0.001)
+
+		# crdn = sunfish.render(move[0]) + sunfish.render(move[1])
+		# print '\t' * (3 - depth), crdn, score, value
+
+		if value > best_value:
+			best_value = value
+			best_move = move
+
+		if value > alpha:
+			alpha = value
+
+		if alpha > beta:
+			break
+
+	return best_value, best_move
+
 
 def create_move(board, crdn):
 	# workaround for pawn promotions
@@ -60,9 +111,9 @@ class Player(object):
 		raise NotImplementedError()
 
 
-class Murasaki(Player):
+class Computer(Player):
 	def __init__(self, func, maxd=5):
-		self._func = get_model_from_pickle('old_model.pickle')
+		self._func = func
 		self._pos = sunfish.Position(sunfish.initial, 0, (True,True), (True,True), 0, 0)
 		self._maxd = maxd
 
@@ -156,15 +207,15 @@ class Sunfish(Player):
 
 		return gn_new
 
-def game():
+def game(func):
 	gn_current = chess.pgn.Game()
 
+	maxd = random.randint(1, 2) # max depth for deep pink
 	maxn = 10 ** (2.0 + random.random() * 1.0) # max nodes for sunfish
 
-	print 'maxn %f' % maxn
+	print 'maxd %f maxn %f' % (maxd, maxn)
 
-#	player_a = Murasaki()
-	player_a = Human()
+	player_a = Computer(func, maxd=maxd)
 	player_b = Sunfish(maxn=maxn)
 
 	times = {'A': 0.0, 'B': 0.0}
@@ -195,12 +246,12 @@ def game():
 				return side, times
 
 def play():
+	func = get_model_from_pickle('old_model.pickle')
 	while True:
-		side, times = game()
+		side, times = game(func)
 		f = open('stats.txt', 'a')
 		f.write('%s %f %f\n' % (side, times['A'], times['B']))
 		f.close()
 
 if __name__ == '__main__':
 	play()
-
