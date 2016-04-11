@@ -17,6 +17,9 @@ import time
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
 from keras.layers import Convolution2D, Reshape, MaxPooling2D, Flatten
+# new keras moved imports
+#from keras.layers.core import Dense, Dropout, Activation, Reshape, Flatten
+#from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.callbacks import EarlyStopping, Callback
 from keras.optimizers import SGD
 
