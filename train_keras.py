@@ -16,6 +16,7 @@ import time
 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
+from keras.layers import Convolution2D, Reshape, MaxPooling2D, Flatten
 from keras.callbacks import EarlyStopping, Callback
 from keras.optimizers import SGD
 
@@ -83,8 +84,11 @@ def train():
 #	MODEL_SIZE = [4096, 4096, 2048, 2048, 1024, 512, 256]
 #	MODEL_SIZE = [512, 512, 512, 512, 512, 512, 512]
 #	MODEL_SIZE = [256, 256, 256, 256, 256, 256, 256]
+
+	CONVOLUTION = 64
+	MODEL_SIZE = [4096, 2048, 1024, 1024]
 	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
-	MODEL_DATA = 'normalized_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
+	MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	X, m = get_data(['x', 'm'])
 #	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
@@ -92,12 +96,25 @@ def train():
 #		show_board( board )
 
 	model = Sequential()
-	model.add(Dense(MODEL_SIZE[0], input_dim = 64, init='uniform', activation='relu' ))
-#	model.add(Dropout(0.2))
+	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
+	model.add(Convolution2D( CONVOLUTION, 3, 3, border_mode='valid'))
+	model.add(Activation('relu'))
+#	model.add(Convolution2D(8, 3, 3))
+#	model.add(Activation('relu'))
+#	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Flatten())
 	for i in MODEL_SIZE[1:] :
 		model.add(Dense( i, init='uniform', activation='relu'))
-#		model.add(Dropout(0.2))
-	model.add(Dense(4, init='uniform', activation='relu'))
+
+	model.add(Dense( 4, init='uniform', activation='relu'))
+
+#	model.add(Dense(MODEL_SIZE[0], input_dim = 64, init='uniform', activation='relu' ))
+##	model.add(Dropout(0.2))
+#	for i in MODEL_SIZE[1:] :
+#		model.add(Dense( i, init='uniform', activation='relu'))
+##		model.add(Dropout(0.2))
+#	model.add(Dense(4, init='uniform', activation='relu'))
 
 	if os.path.isfile( MODEL_DATA ) :		# saved model exists, load it
 		model.load_weights( MODEL_DATA )
@@ -109,7 +126,7 @@ def train():
 
 	early_stopping = EarlyStopping( monitor = 'loss', patience = 50 )	# monitor='val_loss', verbose=0, mode='auto'
 	#print 'fitting...'
-	history = model.fit( X, m, nb_epoch = 500, batch_size = BATCH_SIZE)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
+	history = model.fit( X, m, nb_epoch = 100, batch_size = BATCH_SIZE)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
 
 #	print 'evaluating...'
 #	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
