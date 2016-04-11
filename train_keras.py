@@ -89,7 +89,8 @@ def train():
 #	MODEL_SIZE = [256, 256, 256, 256, 256, 256, 256]
 
 	CONVOLUTION = 64
-	MODEL_SIZE = [4096, 2048, 1024, 1024]
+	MODEL_SIZE = [4096, 2048, 1024, 1024]	# 45M @ AWS
+	MODEL_SIZE = [4096, 4096, 2048, 1024]	# 45M (1999-2001)
 	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
 	MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
@@ -107,7 +108,7 @@ def train():
 #	model.add(MaxPooling2D(pool_size=(2, 2)))
 
 	model.add(Flatten())
-	for i in MODEL_SIZE[1:] :
+	for i in MODEL_SIZE :
 		model.add(Dense( i, init='uniform', activation='relu'))
 
 	model.add(Dense( 4, init='uniform', activation='relu'))
