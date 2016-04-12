@@ -2,30 +2,30 @@
 
 import numpy
 import theano
-import theano.tensor as T
-import os
-from sklearn.cross_validation import train_test_split
+#import theano.tensor as T
+#from sklearn.cross_validation import train_test_split
 import pickle
-import random
 import itertools
-from theano.tensor.nnet import sigmoid
+#from theano.tensor.nnet import sigmoid
 import scipy.sparse
 import h5py
 import math
-import time
 
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation
-from keras.layers import Convolution2D, Reshape, MaxPooling2D, Flatten
-# new keras moved imports
-#from keras.layers.core import Dense, Dropout, Activation, Reshape, Flatten
-#from keras.layers.convolutional import Convolution2D, MaxPooling2D
+
+try :
+	# old imports (v0.3.1)
+	from keras.layers import Dense, Dropout, Activation
+	from keras.layers import Convolution2D, Reshape, MaxPooling2D, Flatten
+except ImportError :
+	# new keras imports (v0.3.3)
+	from keras.layers.core import Dense, Dropout, Activation, Reshape, Flatten
+	from keras.layers.convolutional import Convolution2D, MaxPooling2D
+
 from keras.callbacks import EarlyStopping, Callback
 from keras.optimizers import SGD
 
 from numpy import array
-
-import itertools
 
 import os, sys, time, random
 
@@ -88,9 +88,13 @@ def train():
 #	MODEL_SIZE = [512, 512, 512, 512, 512, 512, 512]
 #	MODEL_SIZE = [256, 256, 256, 256, 256, 256, 256]
 
-	CONVOLUTION = 64
 	MODEL_SIZE = [4096, 2048, 1024, 1024]	# 45M @ AWS
 	MODEL_SIZE = [4096, 4096, 2048, 1024]	# 45M (1999-2001)
+	MODEL_SIZE = [1024, 1024, 1024, 1024]	# 19M @ work (1999-2000)
+#	MODEL_SIZE = [8192, 4096, 2048, 1024]	# 19M @ work (1999-2000)
+
+	CONVOLUTION = min( 64, MODEL_SIZE[0] / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
+
 	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
 	MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
