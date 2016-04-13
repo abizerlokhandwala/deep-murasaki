@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-import train
+#import train
 import pickle
-import theano
-import theano.tensor as T
+#import theano
+#import theano.tensor as T
 import math
 import chess, chess.pgn
-from parse_game import bb2array
+from parse_game import numeric_notation
 import heapq
 import time
 import re
@@ -17,22 +17,10 @@ import pickle
 import random
 import traceback
 
-
-def get_model_from_pickle(fn):
-	f = open(fn)
-	Ws, bs = pickle.load(f)
-
-	Ws_s, bs_s = train.get_parameters(Ws=Ws, bs=bs)
-	x, p = train.get_model(Ws_s, bs_s)
-
-	predict = theano.function(
-		inputs=[x],
-		outputs=p)
-
-	return predict
+from train_keras import make_model
 
 strip_whitespace = re.compile(r"\s+")
-translate_pieces = string.maketrans(".pnbrqkPNBRQK", "\x00" + "\x01\x02\x03\x04\x05\x06" + "\x08\x09\x0a\x0b\x0c\x0d")
+translate_pieces = string.maketrans(".pnbrqkPNBRQK", "\x00" + "\x01\x02\x03\x04\x05\x06" + "\xff\xfe\xfd\xfc\xfb\xfa")
 
 def sf2array(pos, flip):
 	# Create a numpy array from a sunfish representation
@@ -41,7 +29,7 @@ def sf2array(pos, flip):
 	m = numpy.fromstring(pos, dtype=numpy.int8)
 	if flip:
 		m = numpy.fliplr(m.reshape(8, 8)).reshape(64)
-	return m
+	return m.reshape(64)
 
 CHECKMATE_SCORE = 1e6
 
@@ -54,17 +42,16 @@ def create_move(board, crdn):
 			move.promotion = chess.QUEEN # always promote to queen
 	return move
 
-
 class Player(object):
 	def move(self, gn_current):
 		raise NotImplementedError()
 
 
 class Murasaki(Player):
-	def __init__(self, func, maxd=5):
-		self._func = get_model_from_pickle('old_model.pickle')
+	def __init__(self):
+		self._model = make_model()
+		self._model.compile(loss='mean_squared_error', optimizer='adadelta')
 		self._pos = sunfish.Position(sunfish.initial, 0, (True,True), (True,True), 0, 0)
-		self._maxd = maxd
 
 	def move(self, gn_current):
 		assert(gn_current.board().turn == True)
@@ -75,16 +62,24 @@ class Murasaki(Player):
 			move = (119 - sunfish.parse(crdn[0:2]), 119 - sunfish.parse(crdn[2:4]))
 			self._pos = self._pos.move(move)
 
-		# for depth in xrange(1, self._maxd+1):
-		alpha = float('-inf')
-		beta = float('inf')
+		color = 0
 
-		depth = self._maxd
-		t0 = time.time()
-		best_value, best_move = negamax(self._pos, depth, alpha, beta, 1, self._func)
-		crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
-		print depth, best_value, crdn, time.time() - t0
+		X = numpy.array([sf2array(self._pos, flip=(color==1)),])
+#		print X
+		predicted = self._model.predict( X )
+#		print predicted
 
+		best_move = ""
+		best_value = 1e6
+		for move in self._pos.gen_moves():
+			notation = numeric_notation(sunfish.render(move[0]) + sunfish.render(move[1]))
+			value = sum([(i-j)*(i-j) for i,j in zip(predicted[0],notation)])
+			#print value, best_value
+			if best_value > value :
+				best_value = value
+				best_move = move
+
+		print 'best:', best_value
 		self._pos = self._pos.move(best_move)
 		crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
 		move = create_move(gn_current.board(), crdn)
@@ -163,8 +158,8 @@ def game():
 
 	print 'maxn %f' % maxn
 
-#	player_a = Murasaki()
-	player_a = Human()
+	player_a = Murasaki()
+#	player_b = Human()
 	player_b = Sunfish(maxn=maxn)
 
 	times = {'A': 0.0, 'B': 0.0}
@@ -202,5 +197,6 @@ def play():
 		f.close()
 
 if __name__ == '__main__':
-	play()
+#	play()
+	game()
 
