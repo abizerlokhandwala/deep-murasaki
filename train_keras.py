@@ -81,7 +81,8 @@ def show_board( board ) :
 		print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
 	print
 
-def train():
+def make_model(data = None) :
+	global MODEL_DATA
 	MODEL_SIZE = [1024, 1024, 1024, 1024, 1024, 1024, 1024]
 #	MODEL_SIZE = [8192, 8192, 4096, 2048, 2048, 1024, 1024]
 #	MODEL_SIZE = [4096, 4096, 2048, 2048, 1024, 512, 256]
@@ -90,18 +91,16 @@ def train():
 
 	MODEL_SIZE = [4096, 2048, 1024, 1024]	# 45M @ AWS
 	MODEL_SIZE = [4096, 4096, 2048, 1024]	# 45M (1999-2001)
-	MODEL_SIZE = [1024, 1024, 1024, 1024]	# 19M @ work (1999-2000)
+	MODEL_SIZE = [2048, 1024, 1024, 1024]	# 19M @ work (1999-2000)
 #	MODEL_SIZE = [8192, 4096, 2048, 1024]	# 19M @ work (1999-2000)
 
 	CONVOLUTION = min( 64, MODEL_SIZE[0] / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
 
-	MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
-	MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
-
-	X, m = get_data(['x', 'm'])
-#	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
-#	for board in X_train[:2] :
-#		show_board( board )
+	if data :
+		MODEL_DATA = data
+	else :
+		MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
+		MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	model = Sequential()
 	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
@@ -126,6 +125,16 @@ def train():
 
 	if os.path.isfile( MODEL_DATA ) :		# saved model exists, load it
 		model.load_weights( MODEL_DATA )
+
+	return model
+
+def train():
+	X, m = get_data(['x', 'm'])
+#	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
+#	for board in X_train[:2] :
+#		show_board( board )
+
+	model = make_model()
 
 	print 'compiling...'
 #	sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
