@@ -43,7 +43,6 @@ def bb2array(b, flip=False):
 			row = int(pos / 8)
 			if flip:
 				row = 7-row
-				col = 7-col		# preserve the symmetry after flipping
 				color = 1 - color
 
 			#piece = color*7 + piece
