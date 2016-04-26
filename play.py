@@ -7,6 +7,7 @@ import pickle
 import math
 import chess, chess.pgn
 from parse_game import numeric_notation
+from parse_game import bb2array
 import heapq
 import time
 import re
@@ -18,21 +19,6 @@ import random
 import traceback
 
 from train_keras import make_model
-
-strip_whitespace = re.compile(r"\s+")
-translate_pieces = string.maketrans(".pnbrqkPNBRQK", "\x00" + "\x01\x02\x03\x04\x05\x06" + "\xff\xfe\xfd\xfc\xfb\xfa")
-
-def sf2array(pos, flip):
-	# Create a numpy array from a sunfish representation
-	pos = strip_whitespace.sub('', pos.board) # should be 64 characters now
-	pos = pos.translate(translate_pieces)
-	m = numpy.fromstring(pos, dtype=numpy.int8)
-	if flip:
-		m = numpy.fliplr(m.reshape(8, 8)).reshape(64)
-	return m.reshape(64)
-
-CHECKMATE_SCORE = 1e6
-
 
 def create_move(board, crdn):
 	# workaround for pawn promotions
@@ -51,38 +37,32 @@ class Murasaki(Player):
 	def __init__(self):
 		self._model = make_model()
 		self._model.compile(loss='mean_squared_error', optimizer='adadelta')
-		self._pos = sunfish.Position(sunfish.initial, 0, (True,True), (True,True), 0, 0)
 
 	def move(self, gn_current):
 		assert(gn_current.board().turn == True)
 
-		if gn_current.move is not None:
-			# Apply last_move
-			crdn = str(gn_current.move)
-			move = (119 - sunfish.parse(crdn[0:2]), 119 - sunfish.parse(crdn[2:4]))
-			self._pos = self._pos.move(move)
-
 		color = 0
 
-		X = numpy.array([sf2array(self._pos, flip=(color==1)),])
-#		print X
+#		X = numpy.array([sf2array(self._pos, flip=(color==1)),])
+		X = numpy.array([bb2array( gn_current.board(), flip=(color==1) )])
+		#print X
 		predicted = self._model.predict( X )
-#		print predicted
+		print predicted
 
 		best_move = ""
 		best_value = 1e6
-		for move in self._pos.gen_moves():
-			notation = numeric_notation(sunfish.render(move[0]) + sunfish.render(move[1]))
+		for move in gn_current.board().generate_legal_moves() :
+			notation = numeric_notation(str(move))
 			value = sum([(i-j)*(i-j) for i,j in zip(predicted[0],notation)])
 			#print value, best_value
 			if best_value > value :
 				best_value = value
 				best_move = move
+		#print
 
-		print 'best:', best_value
-		self._pos = self._pos.move(best_move)
-		crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
-		move = create_move(gn_current.board(), crdn)
+		print 'best:', best_value, str(best_move)
+
+		move = create_move(gn_current.board(), str(best_move))	# consider promotions
 
 		gn_new = chess.pgn.GameNode()
 		gn_new.parent = gn_current

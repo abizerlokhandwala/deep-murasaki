@@ -2,19 +2,31 @@
 
 import numpy
 import theano
-import theano.tensor as T
-import os
-from sklearn.cross_validation import train_test_split
 import pickle
-import random
 import itertools
-from theano.tensor.nnet import sigmoid
 import scipy.sparse
 import h5py
 import math
-import time
 
-MINIBATCH_SIZE = 2000
+from keras.models import Sequential
+
+try :
+	# old imports (v0.3.1)
+	from keras.layers import Dense, Dropout, Activation
+	from keras.layers import Convolution2D, Reshape, MaxPooling2D, Flatten
+except ImportError :
+	# new keras imports (v0.3.3)
+	from keras.layers.core import Dense, Dropout, Activation, Reshape, Flatten
+	from keras.layers.convolutional import Convolution2D, MaxPooling2D
+
+from keras.callbacks import EarlyStopping, Callback
+from keras.optimizers import SGD
+
+from numpy import array
+
+import os, sys, time, random
+
+BATCH_SIZE = 2000
 
 rng = numpy.random
 
@@ -35,7 +47,7 @@ def load_data(dir = DATA_FOLDER):
 			print 'could not read', fn
 
 
-def get_data(series=['x', 'xr']):
+def get_data(series=['x', 'm']):
 	data = [[] for s in series]
 	for f in load_data():
 		try:
@@ -53,214 +65,104 @@ def get_data(series=['x', 'xr']):
 
 	data = [stack(d) for d in data]
 
-	#test_size = 10000.0 / len(data[0])	# does not work for small data sets (<10k entries)
-	test_size = 0.1		# let's make it fixed 10% instead
-	print 'Splitting', len(data[0]), 'entries into train/test set'
-	data = train_test_split(*data, test_size=test_size)
-
-	print data[0].shape[0], 'train set', data[1].shape[0], 'test set'
+#	#test_size = 10000.0 / len(data[0])	# does not work for small data sets (<10k entries)
+#	test_size = 0.05		# let's make it fixed 5% instead
+#	print 'Splitting', len(data[0]), 'entries into train/test set'
+#	data = train_test_split(*data, test_size=test_size)
+#
+#	print data[0].shape[0], 'train set', data[1].shape[0], 'test set'
 	return data
 
+def show_board( board ) :
+	for row in xrange(8):
+		print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
+	print
 
-def get_parameters(n_in=None, n_hidden_units=2048, n_hidden_layers=None, Ws=None, bs=None):
-	if Ws is None or bs is None:
-		print 'initializing Ws & bs'
-		if type(n_hidden_units) != list:
-			n_hidden_units = [n_hidden_units] * n_hidden_layers
-		else:
-			n_hidden_layers = len(n_hidden_units)
+def make_model(data = None) :
+	global MODEL_DATA
+	MODEL_SIZE = [1024, 1024, 1024, 1024, 1024, 1024, 1024]
+#	MODEL_SIZE = [8192, 8192, 4096, 2048, 2048, 1024, 1024]
+#	MODEL_SIZE = [4096, 4096, 2048, 2048, 1024, 512, 256]
+#	MODEL_SIZE = [512, 512, 512, 512, 512, 512, 512]
+#	MODEL_SIZE = [256, 256, 256, 256, 256, 256, 256]
 
-		Ws = []
-		bs = []
+	MODEL_SIZE = [4096, 2048, 1024, 1024]	# 45M @ AWS
+	MODEL_SIZE = [4096, 4096, 2048, 1024]	# 45M (1999-2001)
+	MODEL_SIZE = [3072, 2048, 2048, 1024]	# 19M @ work (1999-2000)
+	MODEL_SIZE = [2048, 1024, 1024, 1024]	# 5M, 1.011 @ E250
+	MODEL_SIZE = [2048, 2048, 1024, 1024]	# 5M, 0.7122 @ E350
+	MODEL_SIZE = [2048, 2048, 2048, 1024]	# 5M, 0.7673 @ E100, 0.6638 @ E150
+	MODEL_SIZE = [3072, 2048, 2048, 1024]	# 5M, 0.6818 @ E100, 0.6153 @ E125
+#	MODEL_SIZE = [8192, 4096, 2048, 1024]	# 19M @ work (1999-2000)
 
-		def W_values(n_in, n_out):
-			return numpy.asarray(rng.uniform(
-				low=-numpy.sqrt(6. / (n_in + n_out)),
-				high=numpy.sqrt(6. / (n_in + n_out)),
-				size=(n_in, n_out)), dtype=theano.config.floatX)
-		
-		for l in xrange(n_hidden_layers):
-			if l == 0:
-				n_in_2 = n_in
-			else:
-				n_in_2 = n_hidden_units[l-1]
-			if l < n_hidden_layers - 1:
-				n_out_2 = n_hidden_units[l]
-				W = W_values(n_in_2, n_out_2)
-				gamma = 0.1 # initialize it to slightly positive so the derivative exists
-				b = numpy.ones(n_out_2, dtype=theano.config.floatX) * gamma
-			else:
-				W = numpy.zeros(n_in_2, dtype=theano.config.floatX)
-				b = floatX(0.)
-			Ws.append(W)
-			bs.append(b)
+	CONVOLUTION = min( 64, MODEL_SIZE[0] / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
 
-	Ws_s = [theano.shared(W) for W in Ws]
-	bs_s = [theano.shared(b) for b in bs]
+	if data :
+		MODEL_DATA = data
+	else :
+		MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
+		MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
-	return Ws_s, bs_s
+	model = Sequential()
+	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
+	model.add(Convolution2D( CONVOLUTION, 3, 3, border_mode='valid'))
+	model.add(Activation('relu'))
+#	model.add(Convolution2D(8, 3, 3))
+#	model.add(Activation('relu'))
+#	model.add(MaxPooling2D(pool_size=(2, 2)))
 
+	model.add(Flatten())
+	for i in MODEL_SIZE :
+		model.add(Dense( i, init='uniform', activation='relu'))
 
-def get_model(Ws_s, bs_s, dropout=False):
-	print 'building expression graph'
-	x_s = T.matrix('x')
+	model.add(Dense( 4, init='uniform', activation='relu'))
 
-	if type(dropout) != list:
-		dropout = [dropout] * len(Ws_s)
+#	model.add(Dense(MODEL_SIZE[0], input_dim = 64, init='uniform', activation='relu' ))
+##	model.add(Dropout(0.2))
+#	for i in MODEL_SIZE[1:] :
+#		model.add(Dense( i, init='uniform', activation='relu'))
+##		model.add(Dropout(0.2))
+#	model.add(Dense(4, init='uniform', activation='relu'))
 
-	# Convert input into a 12 * 64 list
-	pieces = []
-	for piece in [1,2,3,4,5,6, 8,9,10,11,12,13]:
-		# pieces.append((x_s <= piece and x_s >= piece).astype(theano.config.floatX))
-		pieces.append(T.eq(x_s, piece))
+	if os.path.isfile( MODEL_DATA ) :		# saved model exists, load it
+		model.load_weights( MODEL_DATA )
 
-	binary_layer = T.concatenate(pieces, axis=1)
-
-	srng = theano.tensor.shared_randomstreams.RandomStreams(
-		rng.randint(999999))
-
-	last_layer = binary_layer
-	n = len(Ws_s)
-	for l in xrange(n - 1):
-		# h = T.tanh(T.dot(last_layer, Ws[l]) + bs[l])
-		h = T.dot(last_layer, Ws_s[l]) + bs_s[l]
-		h = h * (h > 0)
-
-		if dropout[l]:
-			mask = srng.binomial(n=1, p=0.5, size=h.shape)
-			h = h * T.cast(mask, theano.config.floatX) * 2
-
-		last_layer = h
-
-	p_s = T.dot(last_layer, Ws_s[-1]) + bs_s[-1]
-	return x_s, p_s
-
-
-def get_training_model(Ws_s, bs_s, dropout=False, lambd=10.0, kappa=1.0):
-	# Build a dual network, one for the real move, one for a fake random move
-	# Train on a negative log likelihood of classifying the right move
-
-	xc_s, xc_p = get_model(Ws_s, bs_s, dropout=dropout)
-	xr_s, xr_p = get_model(Ws_s, bs_s, dropout=dropout)
-	xp_s, xp_p = get_model(Ws_s, bs_s, dropout=dropout)
-
-	#loss = -T.log(sigmoid(xc_p + xp_p)).mean() # negative log likelihood
-	#loss += -T.log(sigmoid(-xp_p - xr_p)).mean() # negative log likelihood
-
-	cr_diff = xc_p - xr_p
-	loss_a = -T.log(sigmoid(cr_diff)).mean()
-
-	cp_diff = kappa * (xc_p + xp_p)
-	loss_b = -T.log(sigmoid( cp_diff)).mean()
-	loss_c = -T.log(sigmoid(-cp_diff)).mean()
-
-	# Add regularization terms
-	reg = 0
-	for x in Ws_s + bs_s:
-		reg += lambd * (x ** 2).mean()
-
-	loss = loss_a + loss_b + loss_c
-	return xc_s, xr_s, xp_s, loss, reg, loss_a, loss_b, loss_c
-
-
-def nesterov_updates(loss, all_params, learn_rate, momentum):
-	updates = []
-	all_grads = T.grad(loss, all_params)
-	for param_i, grad_i in zip(all_params, all_grads):
-		# generate a momentum parameter
-		mparam_i = theano.shared(
-			numpy.array(param_i.get_value()*0., dtype=theano.config.floatX))
-		v = momentum * mparam_i - learn_rate * grad_i
-		w = param_i + momentum * v - learn_rate * grad_i
-		updates.append((param_i, w))
-		updates.append((mparam_i, v))
-	return updates
-
-
-def get_function(Ws_s, bs_s, dropout=False, update=False):
-	xc_s, xr_s, xp_s, loss_f, reg_f, loss_a_f, loss_b_f, loss_c_f = get_training_model(Ws_s, bs_s, dropout=dropout)
-	obj_f = loss_f + reg_f
-
-	learning_rate = T.scalar(dtype=theano.config.floatX)
-
-	momentum = floatX(0.9)
-
-	if update:
-		updates = nesterov_updates(obj_f, Ws_s + bs_s, learning_rate, momentum)
-	else:
-		updates = []
-
-	print 'compiling function'
-	f = theano.function(
-		inputs=[xc_s, xr_s, xp_s, learning_rate],
-		outputs=[loss_f, reg_f, loss_a_f, loss_b_f, loss_c_f],
-		updates=updates,
-		on_unused_input='warn')
-
-	return f
+	return model
 
 def train():
-	MODEL_PICKLE = 'model.pickle'
+	X, m = get_data(['x', 'm'])
+#	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
+#	for board in X_train[:2] :
+#		show_board( board )
 
-	Xc_train, Xc_test, Xr_train, Xr_test, Xp_train, Xp_test = get_data(['x', 'xr', 'xp'])
-#	for board in [Xc_train[0], Xp_train[0]]:
-#		for row in xrange(8):
-#			print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
-#		print
+	model = make_model()
 
-	n_in = 12 * 64
+	print 'compiling...'
+#	sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+#	model.compile(loss='squared_hinge', optimizer='adadelta')
+	model.compile(loss='mean_squared_error', optimizer='adadelta')
 
-	if os.path.isfile( MODEL_PICKLE ) :		# saved model exists, load it
-		with open(MODEL_PICKLE) as fin :
-			saved_ws, saved_bs = pickle.load(fin)
-		Ws_s, bs_s = get_parameters(n_in=n_in, n_hidden_units=[2048] * 3, Ws = saved_ws, bs = saved_bs)
-	else :
-		Ws_s, bs_s = get_parameters(n_in=n_in, n_hidden_units=[2048] * 3)
+	early_stopping = EarlyStopping( monitor = 'loss', patience = 50 )	# monitor='val_loss', verbose=0, mode='auto'
+	#print 'fitting...'
+	history = model.fit( X, m, nb_epoch = 100, batch_size = BATCH_SIZE)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
 
-	minibatch_size = min(MINIBATCH_SIZE, Xc_train.shape[0])
+#	print 'evaluating...'
+#	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
+#	print 'score:', score
 
-	train = get_function(Ws_s, bs_s, update=True, dropout=False)
-	test = get_function(Ws_s, bs_s, update=False, dropout=False)
+	model.save_weights( MODEL_DATA, overwrite = True )
 
-	best_test_loss = float('inf')
-	base_learning_rate = 0.03
-	t0 = time.time()
+	#print X_train[:10]
+#	print m_train[:20]
+#	print model.predict( X_train[:20], batch_size = 5 )
+	print m[:20]
+	print model.predict( X[:20], batch_size = 5 )
 
-	batch_num = int(Xc_train.shape[0] / minibatch_size)
-	batches = list(range(batch_num))
+#	print m_test[:20]
+#	print model.predict( X_test[:20], batch_size = 5 )
 
-	epoch = 0
-	while True :
-		epoch += 1
-		random.shuffle( batches )
-
-		for i in range(batch_num) :
-
-			minibatch_index = batches[i]
-			#minibatch_index = random.randint(0, int(Xc_train.shape[0] / minibatch_size) - 1)
-			lo, hi = minibatch_index * minibatch_size, (minibatch_index + 1) * minibatch_size
-
-			learning_rate = floatX(base_learning_rate * math.exp(-(time.time() - t0) / 86400))
-			loss, reg, loss_a, loss_b, loss_c = train(Xc_train[lo:hi], Xr_train[lo:hi], Xp_train[lo:hi], learning_rate)
-
-			zs = [loss, loss_a, loss_b, loss_c, reg]
-			if i % 10 == 0 :	# reduce noise pollution
-				print 'epoch %d done %.2f%% learning rate %12.9f: %s' % (epoch, i*100.0/batch_num, learning_rate, '  '.join(['%12.9f' % z for z in zs]))
-
-			if i % 200 == 0:
-				test_loss, test_reg, _, _, _ = test(Xc_test, Xr_test, Xp_test, learning_rate)
-				print 'test loss %12.9f' % test_loss
-
-				if test_loss < best_test_loss:
-					print 'new record!'
-					best_test_loss = test_loss
-
-					print 'dumping pickled model'
-					f = open(MODEL_PICKLE, 'w')
-					def values(zs):
-						return [z.get_value(borrow=True) for z in zs]
-					pickle.dump((values(Ws_s), values(bs_s)), f)
-					f.close()
+#	with open( MODEL_DATA + '.history', 'w') as fout :
+#		print >>fout, history.losses
 
 
 if __name__ == '__main__':
