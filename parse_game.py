@@ -89,9 +89,10 @@ def parse_game(g):
 #		print g.end()
 
 	if len(gns) > 10 :
-		num = random.randint(0,5)
-		for i in range(num) :
-			gns.pop()		# remove first N positions to lessen repetitions
+		gns = gns[-10:]
+#		num = random.randint(0,5)
+#		for i in range(num) :
+#			gns.pop()		# remove first N positions to lessen repetitions
 	gns.pop()
 
 	#moves_left, gn, flip = random.choice(gns)
