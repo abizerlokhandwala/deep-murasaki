@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-#import train
+import train
 import pickle
-#import theano
-#import theano.tensor as T
 import math
 import chess, chess.pgn
 from parse_game import numeric_notation
@@ -17,8 +15,6 @@ import sunfish
 import pickle
 import random
 import traceback
-
-from train_keras import make_model
 
 def create_move(board, crdn):
 	# workaround for pawn promotions
@@ -35,7 +31,7 @@ class Player(object):
 
 class Murasaki(Player):
 	def __init__(self):
-		self._model = make_model()
+		self._model = train.make_model()
 		self._model.compile(loss='mean_squared_error', optimizer='adadelta')
 
 	def move(self, gn_current):
