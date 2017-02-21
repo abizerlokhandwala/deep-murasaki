@@ -107,7 +107,8 @@ def make_model(data = None) :
 		MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	model = Sequential()
-	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
+#	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
+	model.add(Reshape( (1, 8, 8), input_shape = (64,)))
 	model.add(Convolution2D( CONVOLUTION, 3, 3, border_mode='valid'))
 	model.add(Activation('relu'))
 #	model.add(Convolution2D(8, 3, 3))
