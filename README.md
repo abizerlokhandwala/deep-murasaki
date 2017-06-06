@@ -1,4 +1,4 @@
-###deep-murasaki
+### deep-murasaki
 
 Deep learning chess engine, that has no idea about chess rules, but watches and learns.
 
@@ -12,7 +12,7 @@ There's no pretrained model in the repository, because the model configuration s
 2. use `train.py` to learn from the saved data as much as possible (GPU is a must for this step).
 3. (optionally) use `reinforcement.py` to learn while playing against another chess program (sunfish).
 
-###The requirements
+### The requirements
 
 * [Keras] (http://keras.io/) `sudo pip install keras`, that gives us a choice to use Theano or TensorFlow as a backend. I used Theano, if you prefer TensorFlow, there's [backend configuration guide](http://keras.io/backend/)
 * [Theano](https://github.com/Theano/Theano): `git clone https://github.com/Theano/Theano; cd Theano; python setup.py install` to get the newest version, old versions have various compatibility issues and the latest available on PIP is 0.7 (quite dated).
