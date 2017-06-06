@@ -13,7 +13,7 @@ engine.info_handlers.append(info_handler)
 
 def evaluation( board ) :
 	engine.position( board )
-	engine.go( movetime = 3000 )
+	engine.go( movetime = 400 )
 	return  -info_handler.info["score"][1].cp
 
 def generate_evaluation( board ) :
@@ -25,12 +25,12 @@ def generate_evaluation( board ) :
 		board.pop()
 
 	moves = sorted(moves, reverse = True)
-	print board.fen(), '{',
+	m_list = []
 	for m in moves :
 		if moves[0][0] - m[0] > 30 : break	# 0.3 pawn limit
-		print m[1], m[0], ',',
-	print '}'
+		m_list.append( '%s:%d' % (board.san(m[1]), m[0]) )
+	return '{' + ', '.join( m_list ) + '}'
 
 if __name__ == '__main__' :
-	generate_evaluation( board )
+	print board.fen(), generate_evaluation( board )
 
