@@ -30,9 +30,10 @@ def evaluation( board ) :
 
 	try :
 		if info_handler.info['score'][1].cp == None :
-			return info_handler.info['score'][1].mate * 1000 - 60000
+			mate = info_handler.info['score'][1].mate
+			return (-60000 if mate > 0 else 60000) + mate * 1000
 		else :
-			return  -info_handler.info["score"][1].cp
+			return -info_handler.info["score"][1].cp
 	except :
 		print info_handler.info
 
@@ -50,6 +51,11 @@ def generate_evaluation( board ) :
 		#if moves[0][0] - m[0] > 30 : break	# 0.3 pawn limit
 		m_list.append( '%s:%d' % (board.san(m[1]), m[0]) )
 	return m_list
+
+#b = chess.Board('3R4/6RQ/1q3p2/4p3/1P2Pk2/6rP/p4P2/5K2 b - - 0 1')
+#b = chess.Board('R7/8/8/8/8/1K6/8/6k1 w - - 0 1')
+#print evaluation( b )
+#sys.exit(1)
 
 def normalize( fen, m_eval ) :
 	parts = fen.split()
@@ -102,10 +108,10 @@ if __name__ == '__main__' :
 					print 'game over'
 					break
 
-#				cnt += 1
-#				if cnt < 50 : continue
+				#cnt += 1
+				#if cnt < 50 : continue
 
-				print board
+				print '\n', board
 				zobrist = board.zobrist_hash()
 				if zobrist not in already_have :
 					already_have.add( zobrist )
@@ -119,9 +125,10 @@ if __name__ == '__main__' :
 
 			#break
 
-			with open( 'fen_data.txt', 'a' ) as fout :
-				fout.write( '\n'.join( fen_data ) )
-				fout.write( '\n' )
+			if len(fen_data) > 1 :
+				with open( 'fen_data.txt', 'a' ) as fout :
+					fout.write( '\n'.join( fen_data ) )
+					fout.write( '\n' )
 
 			with open( 'already_have.json', 'w' ) as fout :
 				json.dump( list(already_have), fout )
