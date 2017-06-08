@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, random, json, time
+import sys, os, random, json, time, datetime
 
 import chess
 import chess.uci
@@ -20,9 +20,12 @@ info_handler = chess.uci.InfoHandler()
 engine.info_handlers.append(info_handler)
 
 already_have = set()
-if os.path.isfile( 'already_have.json' ) :
-	with open( 'already_have.json' ) as fin :
-		already_have = set(json.load( fin ))
+_, _, files = os.walk('.').next()
+for f in files :
+	if f.startswith( 'already_have' ) and f.endswith( '.json' ) :
+		print 'loading', f
+		with open( f ) as fin :
+			already_have.update( json.load( fin ))
 
 def evaluation( board ) :
 	engine.position( board )
@@ -111,7 +114,7 @@ if __name__ == '__main__' :
 				#cnt += 1
 				#if cnt < 50 : continue
 
-				print '\n', board
+				#print '\n', board
 				zobrist = board.zobrist_hash()
 				if zobrist not in already_have :
 					already_have.add( zobrist )
@@ -130,7 +133,9 @@ if __name__ == '__main__' :
 					fout.write( '\n'.join( fen_data ) )
 					fout.write( '\n' )
 
-			with open( 'already_have.json', 'w' ) as fout :
+			now = datetime.datetime.now()
+			suffix = str(now.strftime('%Y-%m-%d'))
+			with open( 'already_have_%s.json' % suffix, 'w' ) as fout :
 				json.dump( list(already_have), fout )
 
 	print 'read:', counter
