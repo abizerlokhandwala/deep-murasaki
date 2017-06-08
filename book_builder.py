@@ -126,7 +126,7 @@ if __name__ == '__main__' :
 			#break
 
 			if len(fen_data) > 1 :
-				with open( 'fen_data.txt', 'a' ) as fout :
+				with open( os.path.basename(sys.argv[1]) + '.txt', 'a' ) as fout :
 					fout.write( '\n'.join( fen_data ) )
 					fout.write( '\n' )
 
