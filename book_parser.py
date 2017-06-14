@@ -63,7 +63,7 @@ def parse_game(g):
 	result = []
 	for m in moves :
 		board.push_san( m[0] )
-		result.append( (bb2array(board), int(m[1])) )
+		result.append( (bb2array(board), float(m[1]) / 60000.0) )
 		board.pop()
 
 	return result
