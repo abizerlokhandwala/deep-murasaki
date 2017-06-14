@@ -63,7 +63,7 @@ def parse_game(g):
 	result = []
 	for m in moves :
 		board.push_san( m[0] )
-		result.append( (bb2array(board), float(m[1]) / 60000.0) )
+		result.append( (bb2array(board), float(m[1]) / 1000.0) )
 		board.pop()
 
 	return result
@@ -91,6 +91,7 @@ def read_all_games(fn_in, fn_out):
 
 			line += 1
 
+	print 'shrink to', line
 	[d.resize(size=line, axis=0) for d in (X, M)]	# shrink to fit
 	g.close()
 
