@@ -7,6 +7,7 @@ import itertools
 import scipy.sparse
 import h5py
 import math
+import random
 
 from keras.models import Sequential
 
@@ -147,6 +148,13 @@ def train():
 #	X_train, X_test, m_train, m_test = get_data(['x', 'm'])
 #	for board in X_train[:2] :
 #		show_board( board )
+
+	start = time.time()
+	print 'shuffling...',
+	idx = range(len(X))
+	random.shuffle(idx)
+	X, m = X[idx], m[idx]
+	print '%.2f sec' % (time.time() - start)
 
 	model = make_model()
 
