@@ -39,8 +39,14 @@ def bb2array(b, flip=False):
 			#x[row * 8 + col] = piece
 			x[row * 8 + col] = -piece if color else piece
 
-	return x
+	return numpy.array(x).reshape((8,8))
 
+def attacks( b, side ) :
+	x = []
+	for i in range(64) :
+		x.append( bin(b.attackers( side, i)).count('1') )
+
+	return numpy.array(x).reshape((8,8))
 
 letters = { 'a' : 1, 'b' : 2, 'c' : 3, 'd' : 4, 'e' : 5, 'f' : 6, 'g' : 7, 'h' : 8 }
 numbers = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, '5' : 5, '6' : 6, '7' : 7, '8' : 8 }
@@ -63,14 +69,14 @@ def parse_game(g):
 	result = []
 	for m in moves :
 		board.push_san( m[0] )
-		result.append( (bb2array(board), float(m[1]) / 1000.0) )
+		result.append( (numpy.array( [bb2array(board), attacks( board, chess.WHITE), -attacks( board, chess.BLACK)]), float(m[1]) / 1000.0) )
 		board.pop()
 
 	return result
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
-	X = g.create_dataset('x', (0, 64), dtype='b', maxshape=(None, 64), chunks=True)
+	X = g.create_dataset('x', (0, 3, 8, 8), dtype='b', maxshape=(None, 3, 8, 8), chunks=True)
 	M = g.create_dataset('m', (0, 1), dtype='float32', maxshape=(None, 1), chunks=True)
 	size = 0
 	line = 0
@@ -117,6 +123,8 @@ def parse_dir():
 		pool = multiprocessing.Pool()
 		pool.map(read_all_games_2, files)
 		pool.close()
+
+		#read_all_games( files[0][0], files[0][1] )
 
 def pretty_time( t ) :
 	if t > 86400 :
