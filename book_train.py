@@ -115,8 +115,12 @@ def make_model(data = None) :
 		MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	model = Sequential()
-#	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
-	model.add(Reshape( (1, 8, 8), input_shape = (64,)))
+##	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
+#	model.add(Reshape( (1, 8, 8), input_shape = (64,)))
+	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th', input_shape = (3,8,8,)))
+	model.add(Activation('relu'))
+	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
+	model.add(Activation('relu'))
 	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
 	model.add(Activation('relu'))
 
@@ -165,7 +169,7 @@ def train():
 
 	early_stopping = EarlyStopping( monitor = 'loss', patience = 50 )	# monitor='val_loss', verbose=0, mode='auto'
 	#print 'fitting...'
-	history = model.fit( X, m, nb_epoch = 100, batch_size = BATCH_SIZE)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
+	history = model.fit( X, m, nb_epoch = 100, batch_size = BATCH_SIZE, validation_split=0.05)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
 
 #	print 'evaluating...'
 #	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
@@ -176,8 +180,12 @@ def train():
 	#print X_train[:10]
 #	print m_train[:20]
 #	print model.predict( X_train[:20], batch_size = 5 )
-	print m[:20]
-	print model.predict( X[:20], batch_size = 5 )
+#	print m[:20]
+#	print model.predict( X[:20], batch_size = 5 )
+
+	result = zip( m[-20:], model.predict( X[-20:], batch_size = 5 ))
+	for a, b in result :
+		print '%.4f %.4f %.2f%%' % (a, b, abs(a-b) * 100.0 / max(abs(a),abs(b)))
 
 #	print m_test[:20]
 #	print model.predict( X_test[:20], batch_size = 5 )
