@@ -9,6 +9,8 @@ import h5py
 import math
 import random
 
+import time, datetime
+
 from keras.models import Sequential
 
 #try :
@@ -123,6 +125,10 @@ def make_model(data = None) :
 	model.add(Activation('relu'))
 	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
 	model.add(Activation('relu'))
+	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
+	model.add(Activation('relu'))
+	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
+	model.add(Activation('relu'))
 
 #	model.add(Convolution2D(8, 3, 3))
 #	model.add(Activation('relu'))
@@ -174,6 +180,10 @@ def train():
 #	print 'evaluating...'
 #	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
 #	print 'score:', score
+
+	now = datetime.datetime.now()
+	suffix = str(now.strftime("%Y-%m-%d_%H%M%S"))
+	MODEL_DATA = MODEL_DATA.replace( '.model', '_%s.model' % suffix )
 
 	model.save_weights( MODEL_DATA, overwrite = True )
 
