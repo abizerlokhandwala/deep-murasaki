@@ -32,7 +32,7 @@ from numpy import array
 
 import os, sys, time, random
 
-BATCH_SIZE = 2000
+BATCH_SIZE = 2048
 
 rng = numpy.random
 
@@ -84,51 +84,41 @@ def show_board( board ) :
 		print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
 	print
 
+CONV_LAYERS = 3
+
+MODEL_DATA = None
+
 def make_model(data = None) :
 	global MODEL_DATA
-	MODEL_SIZE = [1024, 1024, 1024, 1024, 1024, 1024, 1024]
-#	MODEL_SIZE = [8192, 8192, 4096, 2048, 2048, 1024, 1024]
-#	MODEL_SIZE = [4096, 4096, 2048, 2048, 1024, 512, 256]
-#	MODEL_SIZE = [512, 512, 512, 512, 512, 512, 512]
-#	MODEL_SIZE = [256, 256, 256, 256, 256, 256, 256]
-
-	MODEL_SIZE = [4096, 2048, 1024, 1024]	# 45M @ AWS
-	MODEL_SIZE = [4096, 4096, 2048, 1024]	# 45M (1999-2001)
-	MODEL_SIZE = [3072, 2048, 2048, 1024]	# 19M @ work (1999-2000)
-	MODEL_SIZE = [2048, 1024, 1024, 1024]	# 5M, 1.011 @ E250
-	MODEL_SIZE = [2048, 2048, 1024, 1024]	# 5M, 0.7122 @ E350
-	MODEL_SIZE = [2048, 2048, 2048, 1024]	# 5M, 0.7673 @ E100, 0.6638 @ E150
-	MODEL_SIZE = [3072, 2048, 2048, 1024]	# 5M, 0.6818 @ E100, 0.6153 @ E125
-#	MODEL_SIZE = [8192, 4096, 2048, 1024]	# 19M @ work (1999-2000)
-	MODEL_SIZE = [2048, 2048, 1024, 1024]	# 287k 10moves, 0.8181 @ E100, 0.8054 @ E200
-	MODEL_SIZE = [3072, 2048, 2048, 1024]	# 287k 10moves, 0.8174 @ E100
-	MODEL_SIZE = [1024, 1024, 1024, 1024]	# 287k 10moves
 
 	MODEL_SIZE = [8192, 8192, 4096, 2048, 2048, 1024, 1024]
 	MODEL_SIZE = [4096, 4096, 2048, 2048, 1024, 512, 256]
+#	MODEL_SIZE = [4096, 2048, 1024, 512, 256]
+	MODEL_SIZE = [1024, 1024, 1024, 1024]
+	MODEL_SIZE = [1024, 1024]	# 42
+#	MODEL_SIZE = [512]	# 50 @ 36
+	MODEL_SIZE = [4096, 2048, 1024]	# 38 @ 70/2layers, @ /3layers
 
-	CONVOLUTION = min( 64, MODEL_SIZE[0] / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
-	print 'convolution', CONVOLUTION
+	CONVOLUTION = min( 64, MODEL_SIZE[0] * 4 / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
+	print 'convolution', CONVOLUTION, 'layers', CONV_LAYERS
 
-	if data :
-		MODEL_DATA = data
-	else :
-		MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
-		MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
+#	if data :
+#		MODEL_DATA = data
+#	else :
+#		MODEL_DATA = 'new_%s.model' % ('_'.join(['%d' % i for i in MODEL_SIZE]))
+#		MODEL_DATA = 'conv%d_%s.model' % (CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
+
+	name = 'conv%dx%d_%s.model' % (CONV_LAYERS, CONVOLUTION, '_'.join(['%d' % i for i in MODEL_SIZE]))
 
 	model = Sequential()
 ##	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
 #	model.add(Reshape( (1, 8, 8), input_shape = (64,)))
-	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th', input_shape = (3,8,8,)))
+	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='same', dim_ordering='th', input_shape = (3,8,8,)))
 	model.add(Activation('relu'))
-	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
-	model.add(Activation('relu'))
-	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
-	model.add(Activation('relu'))
-	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
-	model.add(Activation('relu'))
-	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='valid', dim_ordering='th'))
-	model.add(Activation('relu'))
+
+	for i in range( CONV_LAYERS ) :
+		model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='same', dim_ordering='th'))	# 'valid' shrinks, 'same' keeps size
+		model.add(Activation('relu'))
 
 #	model.add(Convolution2D(8, 3, 3))
 #	model.add(Activation('relu'))
@@ -151,7 +141,7 @@ def make_model(data = None) :
 #	if os.path.isfile( MODEL_DATA ) :		# saved model exists, load it
 #		model.load_weights( MODEL_DATA )
 
-	return model
+	return model, name
 
 def train():
 	X, m = get_data(['x', 'm'])
@@ -166,12 +156,13 @@ def train():
 	X, m = X[idx], m[idx]
 	print '%.2f sec' % (time.time() - start)
 
-	model = make_model()
+	model, name = make_model()
 
 	print 'compiling...'
-	sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+	sgd = SGD(lr=1e-4, decay=1e-6, momentum=0.9, nesterov=True)
 #	model.compile(loss='squared_hinge', optimizer='adadelta')
-	model.compile(loss='mean_squared_error', optimizer='adadelta')
+#	model.compile(loss='mean_squared_error', optimizer='adadelta')
+	model.compile(loss='mean_squared_error', optimizer=sgd)
 
 	early_stopping = EarlyStopping( monitor = 'loss', patience = 50 )	# monitor='val_loss', verbose=0, mode='auto'
 	#print 'fitting...'
@@ -183,9 +174,7 @@ def train():
 
 	now = datetime.datetime.now()
 	suffix = str(now.strftime("%Y-%m-%d_%H%M%S"))
-	MODEL_DATA = MODEL_DATA.replace( '.model', '_%s.model' % suffix )
-
-	model.save_weights( MODEL_DATA, overwrite = True )
+	model.save_weights( name.replace( '.model', '_%s.mode' % suffix), overwrite = True )
 
 	#print X_train[:10]
 #	print m_train[:20]
