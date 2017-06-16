@@ -9,6 +9,8 @@ import h5py
 import math
 import random
 
+import time, datetime
+
 from keras.models import Sequential
 
 #try :
@@ -82,7 +84,7 @@ def show_board( board ) :
 		print ' '.join('%2d' % x for x in board[(row*8):((row+1)*8)])
 	print
 
-CONV_LAYERS = 2
+CONV_LAYERS = 3
 
 MODEL_DATA = None
 
@@ -93,8 +95,9 @@ def make_model(data = None) :
 	MODEL_SIZE = [4096, 4096, 2048, 2048, 1024, 512, 256]
 #	MODEL_SIZE = [4096, 2048, 1024, 512, 256]
 	MODEL_SIZE = [1024, 1024, 1024, 1024]
-	MODEL_SIZE = [1024, 1024]
-#	MODEL_SIZE = [512]
+	MODEL_SIZE = [1024, 1024]	# 42
+#	MODEL_SIZE = [512]	# 50 @ 36
+	MODEL_SIZE = [4096, 2048, 1024]	# 38 @ 70/2layers, @ /3layers
 
 	CONVOLUTION = min( 64, MODEL_SIZE[0] * 4 / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
 	print 'convolution', CONVOLUTION, 'layers', CONV_LAYERS
