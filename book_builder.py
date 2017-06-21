@@ -2,6 +2,8 @@
 
 import sys, os, random, json, time, datetime
 
+import hashlib
+
 import chess
 import chess.uci
 
@@ -18,6 +20,11 @@ engine.setoption( {'Hash' : 8192, 'Threads' : 24 } )
 
 info_handler = chess.uci.InfoHandler()
 engine.info_handlers.append(info_handler)
+
+already_played = set()
+if os.path.isfile( 'already_played.json' ) :
+	with open( 'already_played.json' ) as fin :
+		already_played = set( json.load(fin) )
 
 already_have = set()
 _, _, files = os.walk('.').next()
@@ -98,8 +105,13 @@ if __name__ == '__main__' :
 			if game == None : break
 			counter += 1
 
+			principal = chess.Board().variation_san( game.main_line() )
+			p_hash = hashlib.md5(principal).hexdigest()
+			if p_hash in already_played : continue
+			already_played.add( p_hash )
+
 			engine.ucinewgame()
-			print chess.Board().variation_san( game.main_line() )
+			print principal
 
 			cnt = 0
 			fen_data = [ '# ' + chess.Board().variation_san( game.main_line() ) ]
@@ -137,6 +149,9 @@ if __name__ == '__main__' :
 			suffix = str(now.strftime('%Y-%m-%d'))
 			with open( 'already_have_%s.json' % suffix, 'w' ) as fout :
 				json.dump( list(already_have), fout )
+
+			with open( 'already_played.json', 'w' ) as fout :
+				json.dump( list(already_played), fout )
 
 	print 'read:', counter
 
