@@ -97,7 +97,7 @@ def make_model(data = None) :
 	MODEL_SIZE = [1024, 1024, 1024, 1024]
 	MODEL_SIZE = [1024, 1024]	# 42
 #	MODEL_SIZE = [512]	# 50 @ 36
-	MODEL_SIZE = [4096, 2048, 1024]	# 38 @ 70/2layers, @ /3layers
+	MODEL_SIZE = [4096, 2048, 1024]	# 38 @ 70/2layers, 36.9 @ 100 /3layers
 
 	CONVOLUTION = min( 64, MODEL_SIZE[0] * 4 / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
 	print 'convolution', CONVOLUTION, 'layers', CONV_LAYERS
@@ -174,7 +174,7 @@ def train():
 
 	now = datetime.datetime.now()
 	suffix = str(now.strftime("%Y-%m-%d_%H%M%S"))
-	model.save_weights( name.replace( '.model', '_%s.mode' % suffix), overwrite = True )
+	model.save_weights( name.replace( '.model', '_%s.model' % suffix), overwrite = True )
 
 	#print X_train[:10]
 #	print m_train[:20]

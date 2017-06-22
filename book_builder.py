@@ -14,6 +14,8 @@ board = chess.Board()
 engine = chess.uci.popen_engine('stockfish')
 engine.uci()
 engine.isready()
+engine.setoption( {'Threads' : 24 } )
+engine.isready()
 engine.setoption( {'Hash' : 8192, 'Threads' : 24 } )
 #print engine.options
 #sys.exit(1)
