@@ -159,7 +159,7 @@ def train():
 	model, name = make_model()
 
 	print 'compiling...'
-	sgd = SGD(lr=1e-4, decay=1e-6, momentum=0.9, nesterov=True)
+	sgd = SGD(lr=5e-5, decay=1e-6, momentum=0.9, nesterov=True)	# 1e-4 : nan, 1e-5 loss 137 epoch1, 5e-5 loss 121 epoch1
 #	model.compile(loss='squared_hinge', optimizer='adadelta')
 #	model.compile(loss='mean_squared_error', optimizer='adadelta')
 	model.compile(loss='mean_squared_error', optimizer=sgd)
