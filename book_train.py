@@ -28,6 +28,8 @@ from keras.layers.convolutional import Conv2D
 from keras.callbacks import EarlyStopping, Callback
 from keras.optimizers import SGD
 
+from keras.layers.advanced_activations import LeakyReLU
+
 from numpy import array
 
 import os, sys, time, random
@@ -98,6 +100,7 @@ def make_model(data = None) :
 	MODEL_SIZE = [1024, 1024]	# 42
 #	MODEL_SIZE = [512]	# 50 @ 36
 	MODEL_SIZE = [4096, 2048, 1024]	# 38 @ 70/2layers, 36.9 @ 100 /3layers
+#	MODEL_SIZE = [8192, 4096, 2048, 1024]
 
 	CONVOLUTION = min( 64, MODEL_SIZE[0] * 4 / 64 )	# 64 for 4096 first layer, 32 for 2048 layer
 	print 'convolution', CONVOLUTION, 'layers', CONV_LAYERS
@@ -113,12 +116,15 @@ def make_model(data = None) :
 	model = Sequential()
 ##	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
 #	model.add(Reshape( (1, 8, 8), input_shape = (64,)))
-	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='same', dim_ordering='th', input_shape = (3,8,8,)))
-	model.add(Activation('relu'))
+	model.add(Conv2D( CONVOLUTION, 1, 1, border_mode='same', dim_ordering='th', input_shape = (3,8,8,)))
+	model.add(LeakyReLU(alpha=0.3))
+
+#	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='same', dim_ordering='th', input_shape = (3,8,8,)))
+#	model.add(LeakyReLU(alpha=0.3))
 
 	for i in range( CONV_LAYERS ) :
 		model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='same', dim_ordering='th'))	# 'valid' shrinks, 'same' keeps size
-		model.add(Activation('relu'))
+		model.add(LeakyReLU(alpha=0.3))
 
 #	model.add(Convolution2D(8, 3, 3))
 #	model.add(Activation('relu'))
@@ -127,7 +133,9 @@ def make_model(data = None) :
 	model.add(Flatten())
 	for i in MODEL_SIZE :
 		print i
-		model.add(Dense( i, init='uniform', activation='relu'))
+#		model.add(Dense( i, init='uniform', activation='relu'))
+		model.add(Dense( i, init='uniform'))
+		model.add(LeakyReLU(alpha=0.3))
 
 	model.add(Dense( 1, init='uniform'))
 
