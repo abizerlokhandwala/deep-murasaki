@@ -26,6 +26,11 @@ def bb2array(b, flip=False):
 #	for pos, piece in enumerate(b.pieces()):	# broken in pychess v0.13.2, hence the next two lines
 	for pos in range(64) :
 		piece = b.piece_type_at(pos)
+
+		if piece == 2 : piece = 3
+		if piece == 5 : piece = 10	# increase values for q/k
+		if piece == 6 : piece = 100
+
 		if piece :
 			color = int(bool(b.occupied_co[chess.BLACK] & chess.BB_SQUARES[pos]))
 			col = int(pos % 8)
