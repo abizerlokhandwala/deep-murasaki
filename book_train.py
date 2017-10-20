@@ -131,12 +131,13 @@ def make_model(data = None) :
 #	model.add(MaxPooling2D(pool_size=(2, 2)))
 
 	model.add(Flatten())
-	for i in MODEL_SIZE :
+	for i in MODEL_SIZE[:-1] :
 		print i
 #		model.add(Dense( i, init='uniform', activation='relu'))
 		model.add(Dense( i, init='uniform'))
 		model.add(LeakyReLU(alpha=0.3))
 
+	model.add(Dense( MODEL_SIZE[-1], init='uniform', activation='tanh'))
 	model.add(Dense( 1, init='uniform'))
 
 #	model.add(Dense(MODEL_SIZE[0], input_dim = 64, init='uniform', activation='relu' ))
@@ -162,19 +163,20 @@ def train():
 	idx = range(len(X))
 	random.shuffle(idx)
 	X, m = X[idx], m[idx]
+#	X, m = X[idx] / 100.0, m[idx] / 100.0	# normalized during parsing
 	print '%.2f sec' % (time.time() - start)
 
 	model, name = make_model()
 
-	print 'compiling...'
-	sgd = SGD(lr=5e-5, decay=1e-6, momentum=0.9, nesterov=True)	# 1e-4 : nan, 1e-5 loss 137 epoch1, 5e-5 loss 121 epoch1
+	print 'compiling...'	# 5e5 too high on 2017-09-06
+	sgd = SGD(lr=3e-5, decay=1e-6, momentum=0.9, nesterov=True)	# 1e-4 : nan, 1e-5 loss 137 epoch1, 5e-5 loss 121 epoch1
 #	model.compile(loss='squared_hinge', optimizer='adadelta')
 #	model.compile(loss='mean_squared_error', optimizer='adadelta')
 	model.compile(loss='mean_squared_error', optimizer=sgd)
 
 	early_stopping = EarlyStopping( monitor = 'loss', patience = 50 )	# monitor='val_loss', verbose=0, mode='auto'
 	#print 'fitting...'
-	history = model.fit( X, m, nb_epoch = 100, batch_size = BATCH_SIZE, validation_split=0.05)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
+	history = model.fit( X, m, nb_epoch = 10, batch_size = BATCH_SIZE, validation_split=0.05)	#, callbacks = [early_stopping])	#, validation_split=0.05)	#, verbose=2)	#, show_accuracy = True )
 
 #	print 'evaluating...'
 #	score = model.evaluate(X_test, m_test, batch_size = BATCH_SIZE )
@@ -190,7 +192,7 @@ def train():
 #	print m[:20]
 #	print model.predict( X[:20], batch_size = 5 )
 
-	result = zip( m[-20:], model.predict( X[-20:], batch_size = 5 ))
+	result = zip( m[-20:] * 100.0, model.predict( X[-20:], batch_size = 5 ) * 100.0)
 	for a, b in result :
 		print '%.4f %.4f %.2f%%' % (a, b, abs(a-b) * 100.0 / max(abs(a),abs(b)))
 

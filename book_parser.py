@@ -81,7 +81,7 @@ def parse_game(g):
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
-	X = g.create_dataset('x', (0, 3, 8, 8), dtype='b', maxshape=(None, 3, 8, 8), chunks=True)
+	X = g.create_dataset('x', (0, 3, 8, 8), dtype='float32', maxshape=(None, 3, 8, 8), chunks=True)	# dtype='b'
 	M = g.create_dataset('m', (0, 1), dtype='float32', maxshape=(None, 1), chunks=True)
 	size = 0
 	line = 0
@@ -97,8 +97,8 @@ def read_all_games(fn_in, fn_out):
 				print 'resizing to', size
 				[d.resize(size=size, axis=0) for d in (X, M)]
 
-			X[line] = x
-			M[line] = m
+			X[line] = x / 100.0
+			M[line] = m / 100.0
 
 			line += 1
 
