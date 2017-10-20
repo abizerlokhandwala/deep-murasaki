@@ -6,8 +6,9 @@ import hashlib
 
 import chess
 import chess.uci
-
 import chess.pgn
+
+from chess.polyglot import zobrist_hash		# used to be Board.zobrist_hash()
 
 board = chess.Board()
 
@@ -129,7 +130,7 @@ if __name__ == '__main__' :
 				#if cnt < 50 : continue
 
 				#print '\n', board
-				zobrist = board.zobrist_hash()
+				zobrist = zobrist_hash(board)
 				if zobrist not in already_have :
 					already_have.add( zobrist )
 
