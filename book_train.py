@@ -163,7 +163,12 @@ def train():
 	idx = range(len(X))
 	random.shuffle(idx)
 	X, m = X[idx], m[idx]
-#	X, m = X[idx] / 100.0, m[idx] / 100.0	# normalized during parsing
+	print '%.2f sec' % (time.time() - start)
+
+	# unpack the bits
+	start = time.time()
+	print 'unpacking...',
+	X = np.array([numpy.unpackbits(x).reshape(28, 8, 8).astype(np.bool) for x in X])
 	print '%.2f sec' % (time.time() - start)
 
 	model, name = make_model()

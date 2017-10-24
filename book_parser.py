@@ -49,14 +49,14 @@ def bb2array(b, flip=False):
 	return numpy.array(x).reshape((8,8))
 
 def spread( b, limit ) :
-	x = numpy.zeros(64 * limit, dtype=numpy.int8)
+	x = numpy.zeros(64 * limit, dtype=numpy.bool)
 	bb = b.reshape(64)
 	for i in range(64) :
 		val = bb[i]
 		assert( val >= 0 )
 		if val == 0 : continue
 		if val > limit : val = limit
-		x[i + 64 * (val-1)] = 1
+		x[i + 64 * (val-1)] = True
 
 	return x.reshape((-1,8,8))
 
@@ -99,7 +99,7 @@ def parse_game(g):
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
-	X = g.create_dataset('x', (0, 28, 8, 8), dtype='b', maxshape=(None, 28, 8, 8), chunks=True)	# dtype='b'
+	X = g.create_dataset('x', (0, 28 * 8), dtype='b', maxshape=(None, 28 * 8), chunks=True)	# dtype='b'
 	M = g.create_dataset('m', (0, 1), dtype='float32', maxshape=(None, 1), chunks=True)
 	size = 0
 	line = 0
@@ -115,7 +115,7 @@ def read_all_games(fn_in, fn_out):
 				print 'resizing to', size
 				[d.resize(size=size, axis=0) for d in (X, M)]
 
-			X[line] = x
+			X[line] = numpy.packbits(x)
 			M[line] = m
 
 			line += 1
