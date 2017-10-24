@@ -53,7 +53,7 @@ def load_data(dir = DATA_FOLDER):
 			yield h5py.File(fn, 'r')
 		except:
 			print 'could not read', fn
-
+		break
 
 def get_data(series=['x', 'm']):
 	data = [[] for s in series]
@@ -116,7 +116,7 @@ def make_model(data = None) :
 	model = Sequential()
 ##	model.add(Reshape( dims = (1, 8, 8), input_shape = (64,)))
 #	model.add(Reshape( (1, 8, 8), input_shape = (64,)))
-	model.add(Conv2D( CONVOLUTION, 1, 1, border_mode='same', dim_ordering='th', input_shape = (3,8,8,)))
+	model.add(Conv2D( CONVOLUTION, 1, 1, border_mode='same', dim_ordering='th', input_shape = (28,8,8,)))
 	model.add(LeakyReLU(alpha=0.3))
 
 #	model.add(Conv2D( CONVOLUTION, 3, 3, border_mode='same', dim_ordering='th', input_shape = (3,8,8,)))

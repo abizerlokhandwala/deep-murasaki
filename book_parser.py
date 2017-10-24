@@ -27,9 +27,10 @@ def bb2array(b, flip=False):
 	for pos in range(64) :
 		piece = b.piece_type_at(pos)
 
-		if piece == 2 : piece = 3
-		if piece == 5 : piece = 10	# increase values for q/k
-		if piece == 6 : piece = 100
+		# don't do that for bitboards
+#		if piece == 2 : piece = 3
+#		if piece == 5 : piece = 10	# increase values for q/k
+#		if piece == 6 : piece = 100
 
 		if piece :
 			color = int(bool(b.occupied_co[chess.BLACK] & chess.BB_SQUARES[pos]))
@@ -42,9 +43,22 @@ def bb2array(b, flip=False):
 			#piece = color*7 + piece
 
 			#x[row * 8 + col] = piece
-			x[row * 8 + col] = -piece if color else piece
+#			x[row * 8 + col] = -piece if color else piece
+			x[row * 8 + col] = (piece+6) if color else piece
 
 	return numpy.array(x).reshape((8,8))
+
+def spread( b, limit ) :
+	x = numpy.zeros(64 * limit, dtype=numpy.int8)
+	bb = b.reshape(64)
+	for i in range(64) :
+		val = bb[i]
+		assert( val >= 0 )
+		if val == 0 : continue
+		if val > limit : val = limit
+		x[i + 64 * (val-1)] = 1
+
+	return x.reshape((-1,8,8))
 
 def attacks( b, side ) :
 	x = []
@@ -74,14 +88,18 @@ def parse_game(g):
 	result = []
 	for m in moves :
 		board.push_san( m[0] )
-		result.append( (numpy.array( [bb2array(board), attacks( board, chess.WHITE), -attacks( board, chess.BLACK)]), float(m[1]) / 1000.0) )
+		brd = spread( bb2array(board), 12 )
+		aw = spread( attacks( board, chess.WHITE), 8)
+		ab = spread( attacks( board, chess.BLACK), 8)
+		result.append( (numpy.vstack( [brd, aw, ab] ), float(m[1]) / 1000.0 / 100.0) )
+#		result.append( (numpy.array( [bb2array(board), attacks( board, chess.WHITE), -attacks( board, chess.BLACK)]), float(m[1]) / 1000.0) )
 		board.pop()
 
 	return result
 
 def read_all_games(fn_in, fn_out):
 	g = h5py.File(fn_out, 'w')
-	X = g.create_dataset('x', (0, 3, 8, 8), dtype='float32', maxshape=(None, 3, 8, 8), chunks=True)	# dtype='b'
+	X = g.create_dataset('x', (0, 28, 8, 8), dtype='b', maxshape=(None, 28, 8, 8), chunks=True)	# dtype='b'
 	M = g.create_dataset('m', (0, 1), dtype='float32', maxshape=(None, 1), chunks=True)
 	size = 0
 	line = 0
@@ -97,8 +115,8 @@ def read_all_games(fn_in, fn_out):
 				print 'resizing to', size
 				[d.resize(size=size, axis=0) for d in (X, M)]
 
-			X[line] = x / 100.0
-			M[line] = m / 100.0
+			X[line] = x
+			M[line] = m
 
 			line += 1
 
