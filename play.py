@@ -32,25 +32,65 @@ class Player(object):
 class Murasaki(Player):
 	def __init__(self):
 		self._model = train.make_model()
-		self._model.compile(loss='mean_squared_error', optimizer='adadelta')
+		self._model.compile(loss='mean_squared_error', optimizer='adam')
 
 	def move(self, gn_current):
 		assert(gn_current.board().turn == True)
 
 		color = 0
 
-#		X = numpy.array([sf2array(self._pos, flip=(color==1)),])
+		# X = numpy.array([sf2array(self._pos, flip=(color==1)),])
 		X = numpy.array([bb2array( gn_current.board(), flip=(color==1) )])
-		#print X
+		# print X
 		predicted = self._model.predict( X )
 		print predicted
 
 		best_move = ""
 		best_value = 1e6
+		print "Valid_moves"+"	"+"meansqr"+"	"+"bestmnsqr"+"	bestmv"
 		for move in gn_current.board().generate_legal_moves() :
 			notation = numeric_notation(str(move))
+			# print notation
 			value = sum([(i-j)*(i-j) for i,j in zip(predicted[0],notation)])
-			#print value, best_value
+			print notation, value, best_value, best_move
+			if best_value > value :
+				best_value = value
+				best_move = move
+		#print
+
+		print 'best:', best_value, str(best_move)
+
+		move = create_move(gn_current.board(), str(best_move))	# consider promotions
+
+		gn_new = chess.pgn.GameNode()
+		gn_new.parent = gn_current
+		gn_new.move = move
+
+		return gn_new
+
+class Murasaki2(Player):
+	def __init__(self):
+		self._model = train.make_model()
+		self._model.compile(loss='mean_squared_error', optimizer='adadelta')
+
+	def move(self, gn_current):
+		assert(gn_current.board().turn == False)
+
+		color = 0
+
+		# X = numpy.array([sf2array(self._pos, flip=(color==1)),])
+		X = numpy.array([bb2array( gn_current.board(), flip=(color==1) )])
+		#print X
+		predicted = self._model.predict( X )
+		#print predicted
+
+		best_move = ""
+		best_value = 1e6
+		for move in gn_current.board().generate_legal_moves() :
+			notation = numeric_notation(str(move))
+			#print notation
+			value = sum([(i-j)*(i-j) for i,j in zip(predicted[0],notation)])
+			print value, best_value
 			if best_value > value :
 				best_value = value
 				best_move = move
@@ -135,8 +175,9 @@ def game():
 	print 'maxn %f' % maxn
 
 	player_a = Murasaki()
-#	player_b = Human()
+	# player_b = Human()
 	player_b = Sunfish(maxn=maxn)
+	# player_b = Murasaki2()
 
 	times = {'A': 0.0, 'B': 0.0}
 
@@ -173,6 +214,9 @@ def play():
 		f.close()
 
 if __name__ == '__main__':
-#	play()
-	game()
-
+	# play()
+	fin=game()
+	if(fin[0]=="-"):
+		print "DRAW"
+	else:
+		print fin[0]+" WINS"
