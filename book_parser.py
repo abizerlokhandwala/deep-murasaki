@@ -162,4 +162,3 @@ if __name__ == '__main__':
 	start = time.time()
 	parse_dir()
 	print 'done in', pretty_time(time.time() - start)
-
